@@ -1406,7 +1406,7 @@ function printPendingOrderReceipt(sale, items) {
             <div id="print-receipt-content" style="display: none;">
                 <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto;">
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">
-                        <img src="{{ asset('logo.jpg') }}" alt="Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
+                        <img src="{{ asset('logo.jpg') }}" alt="Optizee Hotel and Suites" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
                         <h2>PENDING ORDER</h2>
                         <p><strong>Invoice:</strong> ${sale.invoice_number || sale.id}</p>
                         <span style="background: #ffc107; color: #000; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 10px 0;">PENDING PAYMENT</span>
@@ -1497,7 +1497,7 @@ function printPendingOrderReceipt(sale, items) {
         </head>
         <body>
             <div class="header">
-                <img src="{{ asset('logo.jpg') }}" alt="Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
+                <img src="{{ asset('logo.jpg') }}" alt="Optizee Hotel and Suites" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
                 <h2>PENDING ORDER</h2>
                 <p><strong>Invoice:</strong> ${sale.invoice_number}</p>
                 <span class="pending-badge">PENDING PAYMENT</span>
@@ -3496,7 +3496,7 @@ function showReceipt(sale) {
     
     document.getElementById('receipt-content').innerHTML = `
         <div class="text-center mb-4">
-            <img src="{{ asset('logo.jpg') }}" alt="Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
+            <img src="{{ asset('logo.jpg') }}" alt="Optizee Hotel and Suites" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
             <h4>Optizee Hotel and Suites</h4>
             <p class="mb-0">Invoice: ${sale.invoice_number}</p>
             <p class="mb-0">${new Date(sale.created_at).toLocaleString()}</p>

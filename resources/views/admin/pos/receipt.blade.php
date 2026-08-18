@@ -21,7 +21,7 @@
                 <div class="card-body">
                     <div class="receipt-container" id="receipt-content">
                         <div class="text-center mb-4">
-                            <img src="{{ asset('logo.jpg') }}" alt="Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
+                            <img src="{{ asset('logo.jpg') }}" alt="Optizee Hotel and Suites" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
                             <h4>Optizee Hotel and Suites</h4>
                             <p class="mb-0"><strong>Invoice:</strong> {{ $sale->invoice_number }}</p>
                             <p class="mb-0">{{ $sale->created_at->format('F d, Y h:i A') }}</p>

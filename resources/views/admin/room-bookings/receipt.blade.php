@@ -17,7 +17,7 @@
             <div class="card-body" id="receipt-content">
                 <!-- Header Section -->
                 <div class="text-center mb-4 pb-3 border-bottom">
-                    <img src="{{ asset('logo.jpg') }}" alt="Logo" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
+                    <img src="{{ asset('logo.jpg') }}" alt="Optizee Hotel and Suites" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
                     <h4>Optizee Hotel and Suites</h4>
                     <p class="mb-1"><strong>Booking Number:</strong> {{ $roomBooking->booking_number }}</p>
                     <p class="mb-0 text-muted">{{ $roomBooking->created_at ? $roomBooking->created_at->format('F d, Y h:i A') : 'N/A' }}</p>

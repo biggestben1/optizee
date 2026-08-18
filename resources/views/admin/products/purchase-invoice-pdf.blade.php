@@ -127,7 +127,7 @@
                 }
             @endphp
             @if($logoSrc)
-            <img src="{{ $logoSrc }}" class="invoice-logo" alt="Logo">
+            <img src="{{ $logoSrc }}" class="invoice-logo" alt="Optizee Hotel and Suites">
             @endif
             <h1>PURCHASE ORDER</h1>
             <p>Invoice Number: <strong>{{ $invoice_number }}</strong></p>

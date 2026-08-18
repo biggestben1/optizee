@@ -59,7 +59,7 @@
                 <!-- CONTAINER OPEN -->
                 <div class="col col-login mx-auto mt-7">
                     <div class="text-center">
-                        <img src="{{ asset('logo.jpg') }}?v={{ $brandLogoVer }}" class="header-brand-img" alt="" fetchpriority="high" decoding="async" style="height: 120px; width: auto; object-fit: contain;">
+                        <img src="{{ asset('logo.jpg') }}?v={{ $brandLogoVer }}" class="header-brand-img" alt="Optizee Hotel and Suites" fetchpriority="high" decoding="async" style="height: 160px; width: auto; object-fit: contain;">
                     </div>
                 </div>
 

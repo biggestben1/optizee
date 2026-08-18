@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'edunjobi-static-v6';
-const DYNAMIC_CACHE = 'edunjobi-dynamic-v6';
+const STATIC_CACHE = 'optizee-static-v7';
+const DYNAMIC_CACHE = 'optizee-dynamic-v7';
 
 // Offline queue (IndexedDB)
 const IDB_NAME = 'edunjobi-pwa';

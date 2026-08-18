@@ -6,11 +6,11 @@
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes'>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="Ędűnjōbí Hotel and Suites - POS & Management System">
+    <meta name="description" content="Optizee Hotel and Suites - POS & Management System">
     <meta name="robots" content="noindex, nofollow">
     <link rel="canonical" href="{{ url()->current() }}">
-    <meta property="og:title" content="@yield('title', 'Dashboard') - Ędűnjōbí Hotel and Suites">
-    <meta property="og:description" content="Ędűnjōbí Hotel and Suites - POS & Management System">
+    <meta property="og:title" content="@yield('title', 'Dashboard') - Optizee Hotel and Suites">
+    <meta property="og:description" content="Optizee Hotel and Suites - POS & Management System">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
 
@@ -18,16 +18,16 @@
     <meta name="theme-color" content="#5e72e4">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Ędűnjōbí Hotel and Suites">
+    <meta name="apple-mobile-web-app-title" content="Optizee Hotel and Suites">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Ędűnjōbí Hotel and Suites">
+    <meta name="application-name" content="Optizee Hotel and Suites">
 
     <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}?v={{ time() }}" />
     <link rel="shortcut icon" type="image/jpeg" href="{{ asset('logo.jpg') }}?v={{ time() }}" />
     <link rel="apple-touch-icon" href="{{ asset('logo.jpg') }}?v={{ time() }}">
     <link rel="manifest" href="/manifest.json">
 
-    <title>@yield('title', 'Dashboard') - Ędűnjōbí Hotel and Suites</title>
+    <title>@yield('title', 'Dashboard') - Optizee Hotel and Suites</title>
 
     <!-- BOOTSTRAP CSS -->
     <link id="style" href="/sash/assets/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
@@ -55,7 +55,7 @@
         /* Keep logo from overlapping sidebar menu items */
         .app-header .header-brand-img,
         .app-sidebar .side-header .header-brand-img {
-            height: 100px !important;
+            height: 110px !important;
             width: auto !important;
             max-width: 220px;
             object-fit: contain;
@@ -83,8 +83,8 @@
                     <div class="d-flex">
                         <a aria-label="Hide Sidebar" class="app-sidebar__toggle" data-bs-toggle="sidebar" href="javascript:void(0)"></a>
                         <a class="logo-horizontal" href="{{ route('admin.dashboard') }}">
-                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img desktop-logo" alt="logo">
-                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo1" alt="logo">
+                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img desktop-logo" alt="Optizee Hotel and Suites">
+                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo1" alt="Optizee Hotel and Suites">
                         </a>
                         <div class="d-flex order-lg-2 ms-auto header-right-icons">
                             <div class="navbar navbar-collapse responsive-navbar p-0">
@@ -103,7 +103,7 @@
                                         </div>
                                         <!-- PWA Install Button -->
                                         <div class="dropdown d-flex align-items-center me-2" id="pwa-install-container">
-                                            <a href="javascript:void(0)" id="pwa-install-button" class="nav-link icon nav-link-bg d-flex align-items-center justify-content-center" title="Install Ędűnjōbí Hotel and Suites App" style="color: #5e72e4; cursor: pointer; width: 40px; height: 40px; border-radius: 8px; background: rgba(94, 114, 228, 0.1); transition: all 0.3s;" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Install App" onmouseover="this.style.background='rgba(94, 114, 228, 0.2)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(94, 114, 228, 0.1)'; this.style.transform='scale(1)'">
+                                            <a href="javascript:void(0)" id="pwa-install-button" class="nav-link icon nav-link-bg d-flex align-items-center justify-content-center" title="Install Optizee Hotel and Suites App" style="color: #5e72e4; cursor: pointer; width: 40px; height: 40px; border-radius: 8px; background: rgba(94, 114, 228, 0.1); transition: all 0.3s;" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="Install App" onmouseover="this.style.background='rgba(94, 114, 228, 0.2)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(94, 114, 228, 0.1)'; this.style.transform='scale(1)'">
                                                 <i class="fe fe-download" style="font-size: 18px; font-weight: bold;"></i>
                                             </a>
                                         </div>
@@ -160,10 +160,10 @@
                 <div class="app-sidebar">
                     <div class="side-header">
                         <a class="header-brand1" href="{{ route('admin.dashboard') }}">
-                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img desktop-logo" alt="logo">
-                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img toggle-logo" alt="logo">
-                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo" alt="logo">
-                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo1" alt="logo">
+                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img desktop-logo" alt="Optizee Hotel and Suites">
+                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img toggle-logo" alt="Optizee Hotel and Suites">
+                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo" alt="Optizee Hotel and Suites">
+                            <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo1" alt="Optizee Hotel and Suites">
                         </a>
                     </div>
                     <div class="main-sidemenu">
@@ -555,7 +555,7 @@
             // Button is visible by default, will be fully enabled when prompt is available
             installButton.style.opacity = '1';
             installButton.style.cursor = 'pointer';
-            installButton.title = 'Install Ędűnjōbí Hotel and Suites App (Click to install)';
+            installButton.title = 'Install Optizee Hotel and Suites App (Click to install)';
         }
     }
 
@@ -591,14 +591,14 @@
                 const isEdge = /Edg/.test(navigator.userAgent);
 
                 let instructions = '';
-                let title = 'Install Ędűnjōbí Hotel and Suites';
+                let title = 'Install Optizee Hotel and Suites';
 
                 if (isIOS) {
                     instructions = 'To install on iOS:\n\n1. Tap the Share button (square with arrow) at the bottom\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" to confirm';
                 } else if (isAndroid) {
                     instructions = 'To install on Android:\n\nMethod 1 - Menu:\n1. Tap the menu (⋮) in the top right\n2. Look for "Install app" or "Add to Home screen"\n3. Tap it and confirm\n\nMethod 2 - Banner:\n1. Look for a pop-up banner at the bottom\n2. Tap "Install"\n\nNote: If you don\'t see the option, visit the site a few more times.';
                 } else if (isChrome || isEdge) {
-                    instructions = 'To install in Chrome/Edge:\n\nIMPORTANT: The install icon may not appear in the address bar immediately.\n\nMethod 1 - Menu (Most Reliable):\n1. Click the menu (⋮) in the top right corner\n2. Look for "Install Ędűnjōbí Hotel and Suites" or "Install app"\n3. Click it\n\nMethod 2 - Address Bar:\n1. Look for a small install icon (➕) in the address bar\n2. Click it and select "Install"\n\nMethod 3 - Wait for Auto-Prompt:\n1. Visit the site a few more times\n2. The browser will show the install option automatically\n\nWhy it might not show:\n- Need to visit the site multiple times\n- Browser needs to recognize it as installable\n- Try refreshing the page a few times';
+                    instructions = 'To install in Chrome/Edge:\n\nIMPORTANT: The install icon may not appear in the address bar immediately.\n\nMethod 1 - Menu (Most Reliable):\n1. Click the menu (⋮) in the top right corner\n2. Look for "Install Optizee Hotel and Suites" or "Install app"\n3. Click it\n\nMethod 2 - Address Bar:\n1. Look for a small install icon (➕) in the address bar\n2. Click it and select "Install"\n\nMethod 3 - Wait for Auto-Prompt:\n1. Visit the site a few more times\n2. The browser will show the install option automatically\n\nWhy it might not show:\n- Need to visit the site multiple times\n- Browser needs to recognize it as installable\n- Try refreshing the page a few times';
                 } else {
                     instructions = 'To install:\n\n1. Look for install option in your browser menu\n2. Or visit the site multiple times\n3. The browser will show the install option when ready';
                 }
