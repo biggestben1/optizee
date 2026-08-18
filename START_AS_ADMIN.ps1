@@ -1,0 +1,1 @@
+Start-Process powershell -Verb RunAs -ArgumentList "-NoExit", "-Command", "cd C:\xampp\htdocs; Write-Host 'Running Apache setup as Administrator...' -ForegroundColor Green; Write-Host ''; Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force; .\setup_permanent_apache_server.ps1"
