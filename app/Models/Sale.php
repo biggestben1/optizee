@@ -200,9 +200,16 @@ class Sale extends Model
         ]);
     }
 
+    public function getTotalCost(): float
+    {
+        return (float) $this->items->sum(function ($item) {
+            return $item->cost_price * $item->quantity;
+        });
+    }
+
     public function getProfit(): float
     {
-        return $this->items->sum(function ($item) {
+        return (float) $this->items->sum(function ($item) {
             return ($item->unit_price - $item->cost_price) * $item->quantity;
         });
     }

@@ -25,6 +25,16 @@ class RoomBookingController extends Controller
 
     public function store(Request $request)
     {
+        $customerId = $request->input('customer_id');
+        if ($customerId === '' || $customerId === 'null' || $customerId === 'undefined' || $customerId === '0') {
+            $request->merge(['customer_id' => null]);
+        }
+
+        $guestEmail = $request->input('guest_email');
+        if ($guestEmail === '' || $guestEmail === 'null') {
+            $request->merge(['guest_email' => null]);
+        }
+
         $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',
             'booking_type' => 'required|in:overnight,short_stay',

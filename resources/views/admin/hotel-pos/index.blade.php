@@ -199,7 +199,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Amount Paid <span class="text-danger">*</span></label>
-                                <input type="text" id="room-amount-paid" class="form-control" placeholder="Enter amount paid (e.g., 200,000)" oninput="formatAmountPaid(this)" onblur="formatAmountPaid(this)" required>
+                                <input type="text" id="room-amount-paid" class="form-control" placeholder="Auto-fills with total" oninput="formatAmountPaid(this)" onblur="formatAmountPaid(this)" onclick="autoFillRoomAmountPaid(true)" required>
                             </div>
 
                             <div class="card bg-light mb-3">
@@ -260,6 +260,7 @@ let selectedRoomId = null;
 let selectedRoomPrice = 0;
 let selectedHourlyRate = 0;
 let isFullSuiteBooking = false;
+let amountPaidManuallyEdited = false;
 
 function toggleBookingType() {
     const bookingType = document.getElementById('booking-type').value;
@@ -320,7 +321,7 @@ function calculateShortStayTotal() {
     document.getElementById('room-service-charge-display').textContent = `₦${serviceCharge.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
     document.getElementById('room-total').textContent = `₦${total.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
     
-    calculateRoomChange();
+    autoFillRoomAmountPaid();
 }
 
 // Check if room_id is in URL
@@ -486,10 +487,51 @@ function calculateRoomTotal() {
     document.getElementById('room-service-charge-display').textContent = `₦${serviceCharge.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
     document.getElementById('room-total').textContent = `₦${total.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
     
+    autoFillRoomAmountPaid();
+}
+
+function formatPaidNumber(numValue) {
+    if (numValue % 1 === 0) {
+        return numValue.toLocaleString('en-NG', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    }
+    return numValue.toLocaleString('en-NG', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+}
+
+function autoFillRoomAmountPaid(forceEmptyOnly = false) {
+    const input = document.getElementById('room-amount-paid');
+    if (!input) {
+        return;
+    }
+
+    const total = parseFloat(document.getElementById('room-total').textContent.replace(/[₦,]/g, '')) || 0;
+    const isEmpty = !input.value || input.value.trim() === '';
+
+    if (forceEmptyOnly && !isEmpty) {
+        calculateRoomChange();
+        return;
+    }
+
+    if (amountPaidManuallyEdited && !isEmpty && !forceEmptyOnly) {
+        calculateRoomChange();
+        return;
+    }
+
+    if (total > 0) {
+        input.value = formatPaidNumber(total);
+        amountPaidManuallyEdited = false;
+    }
+
     calculateRoomChange();
 }
 
 function formatAmountPaid(input) {
+    amountPaidManuallyEdited = true;
     const cursorPosition = input.selectionStart;
     const originalLength = input.value.length;
     
@@ -568,17 +610,28 @@ function processRoomBooking() {
     const formDataObj = new FormData();
     formDataObj.append('room_id', selectedRoomId);
     formDataObj.append('booking_type', bookingType);
-    formDataObj.append('customer_id', document.getElementById('customer-select').value || null);
+
+    const customerId = document.getElementById('customer-select')?.value;
+    if (customerId) {
+        formDataObj.append('customer_id', customerId);
+    }
+
     formDataObj.append('guest_name', guestName);
     formDataObj.append('guest_phone', guestPhone);
-    formDataObj.append('guest_email', document.getElementById('guest-email').value.trim());
+
+    const guestEmail = document.getElementById('guest-email').value.trim();
+    if (guestEmail) {
+        formDataObj.append('guest_email', guestEmail);
+    }
+
     formDataObj.append('discount', parseFloat(document.getElementById('room-discount').value) || 0);
     formDataObj.append('tax', parseFloat(document.getElementById('room-tax').value) || 0);
     formDataObj.append('service_charge', parseFloat(document.getElementById('room-service-charge').value) || 0);
     formDataObj.append('payment_method', document.getElementById('room-payment-method').value);
     formDataObj.append('amount_paid', parseFloat(document.getElementById('room-amount-paid').value.replace(/[,]/g, '')) || 0);
     formDataObj.append('notes', document.getElementById('room-notes').value);
-    formDataObj.append('is_full_suite_booking', isFullSuiteBooking && document.getElementById('room-category-select').selectedOptions[0].dataset.isSuite === '1');
+    const suiteSelected = document.getElementById('room-category-select').selectedOptions[0]?.dataset.isSuite === '1';
+    formDataObj.append('is_full_suite_booking', (isFullSuiteBooking && suiteSelected) ? '1' : '0');
     
     // Append ID upload file if present
     const idUploadInput = document.getElementById('guest-id-upload');
@@ -638,7 +691,11 @@ function processRoomBooking() {
     .then(response => {
         if (!response.ok) {
             return response.json().then(data => {
-                throw new Error(data.message || data.error || 'Failed to create booking');
+                let message = data.message || data.error || 'Failed to create booking';
+                if (data.errors) {
+                    message = Object.values(data.errors).flat().join('\n');
+                }
+                throw new Error(message);
             });
         }
         return response.json();
@@ -685,6 +742,7 @@ function clearRoomBooking() {
     document.getElementById('check-in-date').value = '';
     document.getElementById('check-out-date').value = '';
     document.getElementById('room-amount-paid').value = '';
+    amountPaidManuallyEdited = false;
     document.getElementById('room-discount').value = '0';
     document.getElementById('room-tax').value = '0';
     document.getElementById('room-service-charge').value = '0';

@@ -25,10 +25,11 @@ class DashboardController extends Controller
             $salesQuery->where('user_id', $user->id);
         }
 
-        $todaySales = $salesQuery->sum('total');
-        $todayProfit = $salesQuery->get()->sum(fn($sale) => $sale->getProfit());
-        $todayCost = $salesQuery->get()->sum(fn($sale) => $sale->getTotalCost());
-        $todayTransactions = $salesQuery->count();
+        $todaySalesList = (clone $salesQuery)->with('items')->get();
+        $todaySales = $todaySalesList->sum('total');
+        $todayProfit = $todaySalesList->sum(fn($sale) => $sale->getProfit());
+        $todayCost = $todaySalesList->sum(fn($sale) => $sale->getTotalCost());
+        $todayTransactions = $todaySalesList->count();
 
         // Today's Expenses
         $todayExpenses = Expense::whereDate('expense_date', now())->sum('amount');
