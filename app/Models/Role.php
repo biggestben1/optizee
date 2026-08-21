@@ -45,6 +45,11 @@ class Role extends Model
     {
         return static::where('name', 'kitchen')->first();
     }
+
+    public static function getReceptionist(): ?Role
+    {
+        return static::where('name', 'receptionist')->first();
+    }
 }
 
 

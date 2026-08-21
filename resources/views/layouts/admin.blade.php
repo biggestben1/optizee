@@ -82,7 +82,7 @@
                 <div class="container-fluid main-container">
                     <div class="d-flex">
                         <a aria-label="Hide Sidebar" class="app-sidebar__toggle" data-bs-toggle="sidebar" href="javascript:void(0)"></a>
-                        <a class="logo-horizontal" href="{{ route('admin.dashboard') }}">
+                        <a class="logo-horizontal" href="{{ auth()->user()->isKitchen() ? route('admin.kitchen.index') : (auth()->user()->isReceptionist() ? route('admin.hotel-pos.index') : route('admin.dashboard')) }}">
                             <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img desktop-logo" alt="Optizee Hotel and Suites">
                             <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo1" alt="Optizee Hotel and Suites">
                         </a>
@@ -108,6 +108,7 @@
                                             </a>
                                         </div>
                                         @php $currentShift = auth()->user()->getOpenShift(); @endphp
+                                        @if(!auth()->user()->isKitchen() && !auth()->user()->isReceptionist())
                                         @if($currentShift)
                                         <div class="d-flex align-items-center me-3">
                                             <span class="badge bg-success">Shift Active</span>
@@ -116,6 +117,7 @@
                                         <div class="d-flex align-items-center me-3">
                                             <span class="badge bg-warning">No Active Shift</span>
                                         </div>
+                                        @endif
                                         @endif
                                         <div class="dropdown d-flex profile-1">
                                             <a href="javascript:void(0)" data-bs-toggle="dropdown" class="nav-link leading-none d-flex">
@@ -132,7 +134,7 @@
                                                 <a class="dropdown-item" href="{{ route('profile.edit') }}">
                                                     <i class="dropdown-icon fe fe-user"></i> Profile
                                                 </a>
-                                                @if($currentShift)
+                                                @if($currentShift && !auth()->user()->isKitchen() && !auth()->user()->isReceptionist())
                                                 <a class="dropdown-item" href="{{ route('admin.shifts.current') }}">
                                                     <i class="dropdown-icon fe fe-clock"></i> Current Shift
                                                 </a>
@@ -159,7 +161,7 @@
                 <div class="app-sidebar__overlay" data-bs-toggle="sidebar"></div>
                 <div class="app-sidebar">
                     <div class="side-header">
-                        <a class="header-brand1" href="{{ route('admin.dashboard') }}">
+                        <a class="header-brand1" href="{{ auth()->user()->isKitchen() ? route('admin.kitchen.index') : (auth()->user()->isReceptionist() ? route('admin.hotel-pos.index') : route('admin.dashboard')) }}">
                             <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img desktop-logo" alt="Optizee Hotel and Suites">
                             <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img toggle-logo" alt="Optizee Hotel and Suites">
                             <img src="{{ asset('logo.jpg') }}?v={{ time() }}" class="header-brand-img light-logo" alt="Optizee Hotel and Suites">
@@ -173,6 +175,47 @@
                             </svg>
                         </div>
                         <ul class="side-menu">
+                            @if(auth()->user()->isKitchen())
+                            <li class="sub-category">
+                                <h3>Kitchen</h3>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.kitchen.*') && !request()->routeIs('admin.kitchen.report') ? 'active' : '' }}" href="{{ route('admin.kitchen.index') }}">
+                                    <i class="side-menu__icon fe fe-coffee"></i>
+                                    <span class="side-menu__label">Kitchen Display</span>
+                                </a>
+                            </li>
+                            @if(\Illuminate\Support\Facades\Route::has('admin.kitchen.report'))
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.kitchen.report') ? 'active' : '' }}" href="{{ route('admin.kitchen.report') }}">
+                                    <i class="side-menu__icon fe fe-bar-chart-2"></i>
+                                    <span class="side-menu__label">Kitchen Report</span>
+                                </a>
+                            </li>
+                            @endif
+                            @elseif(auth()->user()->isReceptionist())
+                            <li class="sub-category">
+                                <h3>Front Desk</h3>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.hotel-pos.*') ? 'active' : '' }}" href="{{ route('admin.hotel-pos.index') }}">
+                                    <i class="side-menu__icon fe fe-home"></i>
+                                    <span class="side-menu__label">Hotel POS</span>
+                                </a>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.room-bookings.*') ? 'active' : '' }}" href="{{ route('admin.room-bookings.index') }}">
+                                    <i class="side-menu__icon fe fe-calendar"></i>
+                                    <span class="side-menu__label">Room Bookings</span>
+                                </a>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}">
+                                    <i class="side-menu__icon fe fe-bar-chart-2"></i>
+                                    <span class="side-menu__label">Reports</span>
+                                </a>
+                            </li>
+                            @else
                             <li class="sub-category">
                                 <h3>Main</h3>
                             </li>
@@ -334,11 +377,19 @@
                                 <h3>Kitchen</h3>
                             </li>
                             <li class="slide">
-                                <a class="side-menu__item {{ request()->routeIs('admin.kitchen.*') ? 'active' : '' }}" href="{{ route('admin.kitchen.index') }}">
+                                <a class="side-menu__item {{ request()->routeIs('admin.kitchen.*') && !request()->routeIs('admin.kitchen.report') ? 'active' : '' }}" href="{{ route('admin.kitchen.index') }}">
                                     <i class="side-menu__icon fe fe-coffee"></i>
                                     <span class="side-menu__label">Kitchen Display</span>
                                 </a>
                             </li>
+                            @if(\Illuminate\Support\Facades\Route::has('admin.kitchen.report'))
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.kitchen.report') ? 'active' : '' }}" href="{{ route('admin.kitchen.report') }}">
+                                    <i class="side-menu__icon fe fe-bar-chart-2"></i>
+                                    <span class="side-menu__label">Kitchen Report</span>
+                                </a>
+                            </li>
+                            @endif
                             @endif
 
                             @if((auth()->user()->is_admin || auth()->user()->isManager()) && !auth()->user()->isCashier())
@@ -351,6 +402,7 @@
                                     <span class="side-menu__label">Staff Management</span>
                                 </a>
                             </li>
+                            @endif
                             @endif
 
                             <!-- Account Section - Always visible at bottom for mobile -->
@@ -393,7 +445,7 @@
                             <div>
                                 <h1 class="page-title">@yield('title', 'Dashboard')</h1>
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
+                                    <li class="breadcrumb-item"><a href="{{ auth()->user()->isKitchen() ? route('admin.kitchen.index') : (auth()->user()->isReceptionist() ? route('admin.hotel-pos.index') : route('admin.dashboard')) }}">Home</a></li>
                                     @yield('breadcrumb')
                                 </ol>
                             </div>

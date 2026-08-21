@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'optizee-static-v7';
-const DYNAMIC_CACHE = 'optizee-dynamic-v7';
+const STATIC_CACHE = 'optizee-static-v8';
+const DYNAMIC_CACHE = 'optizee-dynamic-v8';
 
 // Offline queue (IndexedDB)
 const IDB_NAME = 'edunjobi-pwa';
@@ -79,12 +79,6 @@ async function replayQueue() {
 
 const urlsToCache = [
   '/',
-  '/admin/dashboard',
-  '/admin/pos',
-  '/admin/hotel-pos',
-  '/admin/rooms',
-  '/admin/room-bookings',
-  '/admin/kitchen',
   '/manifest.json',
   '/offline.html',
   '/sash/assets/css/style.css',
@@ -203,7 +197,16 @@ self.addEventListener('fetch', (event) => {
   // Letters / PDFs: always hit network — SW cache-first path can serve stale login HTML
   // for this URL after auth was removed from the route (same cache key as the PDF request).
   const pathname = url.pathname;
-  if (pathname.startsWith('/letters/') || (request.method === 'GET' && pathname.endsWith('.pdf'))) {
+  const accept = request.headers.get('Accept') || '';
+  const isJsonOrAjax = accept.includes('application/json')
+    || request.headers.get('X-Requested-With') === 'XMLHttpRequest';
+  const isAdminData = pathname.startsWith('/admin/');
+  if (
+    pathname.startsWith('/letters/')
+    || (request.method === 'GET' && pathname.endsWith('.pdf'))
+    || isJsonOrAjax
+    || isAdminData
+  ) {
     event.respondWith(fetch(request));
     return;
   }
@@ -284,6 +287,16 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(async () => {
+      try {
+        const db = await openDb();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(QUEUE_STORE, 'readwrite');
+          tx.objectStore(QUEUE_STORE).clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (_) {}
     })
   );
   // Take control of all pages immediately

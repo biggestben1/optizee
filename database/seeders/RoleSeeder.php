@@ -45,6 +45,11 @@ class RoleSeeder extends Seeder
                 'display_name' => 'Director',
                 'description' => 'Director (administrator-equivalent). Full system access similar to administrators.',
             ],
+            [
+                'name' => 'receptionist',
+                'display_name' => 'Receptionist',
+                'description' => 'Hotel front desk. Access Hotel POS and hotel booking reports.',
+            ],
         ];
 
         foreach ($roles as $role) {

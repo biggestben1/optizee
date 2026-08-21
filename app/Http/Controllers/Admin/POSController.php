@@ -284,19 +284,19 @@ class POSController extends Controller
                 $customer->addToBalance($total);
             }
 
-            DB::commit();
-
-            // Automatic guest deactivation (checkout) after order is completed
-            if ($sale->table_guest_id) {
-                $guest = TableGuest::find($sale->table_guest_id);
+            if (!empty($validated['table_guest_id'])) {
+                $guest = TableGuest::find($validated['table_guest_id']);
                 if ($guest) {
                     $guest->leave();
-                }
 
-                // If this was the last active guest at the table, we might want to release the table,
-                // but usually table release is a separate manual action for the waiter.
-                // For now, we only deactivate the guest as requested.
+                    $table = $guest->table;
+                    if ($table && $table->activeGuests()->count() === 0) {
+                        $table->release();
+                    }
+                }
             }
+
+            DB::commit();
 
             AuditLog::log('sale_created', "Created sale #{$sale->invoice_number} for {$total}", $sale);
 
@@ -379,10 +379,17 @@ class POSController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
             'table_id' => 'nullable|exists:tables,id',
-            'table_guest_id' => 'nullable|exists:table_guests,id',
+            'table_guest_id' => 'nullable',
             'customer_id' => 'nullable|exists:customers,id',
             'discount' => 'nullable|numeric|min:0',
         ]);
+
+        if (!empty($validated['table_guest_id']) && !TableGuest::find($validated['table_guest_id'])) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Guest already removed.',
+            ]);
+        }
 
         $shift = auth()->user()->getOpenShift();
 
@@ -506,9 +513,9 @@ class POSController extends Controller
     public function getPending(Request $request)
     {
         $validated = $request->validate([
-            'table_id' => 'nullable|exists:tables,id',
-            'table_guest_id' => 'nullable|exists:table_guests,id',
-            'sale_id' => 'nullable|exists:sales,id',
+            'table_id' => 'nullable',
+            'table_guest_id' => 'nullable',
+            'sale_id' => 'nullable',
         ]);
 
         // If sale_id is provided, get that specific order
@@ -521,7 +528,8 @@ class POSController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Order not found.',
-                ], 404);
+                    'orders' => [],
+                ]);
             }
 
             // Check if it's pending or completed
@@ -591,6 +599,12 @@ class POSController extends Controller
             $pendingSales = Sale::where('table_id', $validated['table_id'])
                 ->where('status', 'pending')
                 ->where('user_id', auth()->id())
+                ->where(function ($query) {
+                    $query->whereNull('table_guest_id')
+                        ->orWhereHas('tableGuest', function ($guestQuery) {
+                            $guestQuery->where('is_active', true);
+                        });
+                })
                 ->with(['tableGuest', 'customer', 'items'])
                 ->latest()
                 ->get();
@@ -676,20 +690,38 @@ class POSController extends Controller
     /**
      * Delete a single pending order
      */
-    public function deletePending($saleId)
+    public function deletePending($sale)
     {
-        $sale = Sale::where('id', $saleId)
-            ->where('status', 'pending')
-            ->where('user_id', auth()->id())
-            ->first();
-
+        $sale = Sale::find($sale);
         if (!$sale) {
             return response()->json([
-                'success' => false,
-                'message' => 'Pending order not found or you do not have permission to delete it.',
-            ], 404);
+                'success' => true,
+                'message' => 'Pending order already removed.',
+            ]);
         }
 
+        $user = auth()->user();
+
+        $canDelete = $sale->user_id === $user->id
+            || $user->is_admin
+            || $user->isManager()
+            || $user->isSupervisor();
+
+        if (!$canDelete) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete this pending order.',
+            ], 403);
+        }
+
+        if ($sale->status !== 'pending') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order already completed.',
+            ]);
+        }
+
+        $sale->items()->delete();
         $sale->delete();
 
         return response()->json([

@@ -15,9 +15,11 @@
                     <h4 class="card-title mb-0">
                         <i class="fe fe-home me-2"></i>Hotel Room Booking
                     </h4>
+                    @if(!auth()->user()->isReceptionist())
                     <a href="{{ route('admin.rooms.index') }}" class="btn btn-outline-primary">
                         <i class="fe fe-arrow-left me-2"></i>Back to Rooms
                     </a>
+                    @endif
                 </div>
             </div>
             <div class="card-body">

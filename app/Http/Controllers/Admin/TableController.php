@@ -7,7 +7,10 @@ use App\Models\AuditLog;
 use App\Models\Table;
 use App\Models\TableGuest;
 use App\Models\Customer;
+use App\Models\Sale;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class TableController extends Controller
 {
@@ -206,40 +209,103 @@ class TableController extends Controller
     /**
      * Add guest to existing table
      */
-    public function addGuest(Request $request, Table $table)
+    public function addGuest(Request $request, $table = null)
     {
-        if (!$table->isOccupied()) {
-            // Auto-occupy table if not occupied
-            $shift = auth()->user()->getOpenShift();
-            $table->occupy(auth()->id(), $shift?->id);
+        $tableId = $request->input('table_id') ?: $table;
+        $table = $table instanceof Table ? $table : Table::find($tableId);
+        $wantsJson = $request->expectsJson() || $request->wantsJson() || $request->ajax()
+            || $request->header('X-Requested-With') === 'XMLHttpRequest'
+            || $request->filled('table_id');
+
+        if (!$table) {
+            if ($wantsJson) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select a table first.',
+                ], 422);
+            }
+            return back()->with('error', 'Please select a table first.');
         }
 
-        $validated = $request->validate([
-            'guest_name' => 'required|string|max:255',
-            'customer_id' => 'nullable|exists:customers,id',
-        ]);
+        $customerId = $request->input('customer_id');
+        if ($customerId === '' || $customerId === 'null' || $customerId === 'undefined') {
+            $request->merge(['customer_id' => null]);
+            $customerId = null;
+        }
 
-        $guest = TableGuest::create([
-            'table_id' => $table->id,
-            'guest_name' => $validated['guest_name'],
-            'customer_id' => $validated['customer_id'] ?? null,
-            'created_by' => auth()->id(),
-        ]);
-
-        AuditLog::log('guest_added', "Added guest {$validated['guest_name']} to table {$table->number}", $table);
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Guest added successfully.',
-                'guest' => [
-                    'id' => $guest->id,
-                    'guest_name' => $guest->guest_name,
-                ],
+        try {
+            $validated = $request->validate([
+                'guest_name' => 'required|string|max:255',
+                'customer_id' => 'nullable|exists:customers,id',
             ]);
+        } catch (ValidationException $e) {
+            if ($wantsJson) {
+                return response()->json([
+                    'success' => false,
+                    'message' => collect($e->errors())->flatten()->first() ?: 'Invalid guest details.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            throw $e;
         }
 
-        return back()->with('success', 'Guest added successfully.');
+        try {
+            if (!$table->isOccupied()) {
+                try {
+                    $shift = auth()->user()?->getOpenShift();
+                    $table->occupy(auth()->id(), $shift?->id);
+                } catch (\Throwable $e) {
+                    try {
+                        $table->occupy(auth()->id(), null);
+                    } catch (\Throwable $ignored) {
+                        // Guest can still be added even if occupy fails.
+                    }
+                }
+            }
+
+            $guest = TableGuest::create([
+                'table_id' => $table->id,
+                'guest_name' => $validated['guest_name'],
+                'customer_id' => $validated['customer_id'] ?? $customerId,
+                'created_by' => auth()->id(),
+                'is_active' => true,
+                'seated_at' => now(),
+            ]);
+            $guest->load('customer');
+
+            try {
+                AuditLog::log('guest_added', "Added guest {$validated['guest_name']} to table {$table->number}", $table);
+            } catch (\Throwable $ignored) {
+            }
+
+            if ($wantsJson) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Guest added successfully.',
+                    'guest' => [
+                        'id' => $guest->id,
+                        'guest_name' => $guest->guest_name,
+                        'customer' => $guest->customer ? [
+                            'id' => $guest->customer->id,
+                            'name' => $guest->customer->name,
+                        ] : null,
+                        'pending_items_count' => 0,
+                        'pending_total' => 0,
+                    ],
+                ]);
+            }
+
+            return back()->with('success', 'Guest added successfully.');
+        } catch (\Throwable $e) {
+            if ($wantsJson) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to add guest: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Failed to add guest: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -300,8 +366,18 @@ class TableController extends Controller
     /**
      * Update guest (e.g., assign customer)
      */
-    public function updateGuest(Request $request, TableGuest $guest)
+    public function updateGuest(Request $request, $guest)
     {
+        $guest = TableGuest::find($guest);
+        if (!$guest) {
+            if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Guest already removed.',
+                ]);
+            }
+            return back()->with('info', 'Guest already removed.');
+        }
         $validated = $request->validate([
             'customer_id' => 'nullable|exists:customers,id',
         ]);
@@ -334,44 +410,59 @@ class TableController extends Controller
     /**
      * Remove guest from table (or delete guest without table)
      */
-    public function removeGuest(TableGuest $guest)
+    public function removeGuest($guest)
     {
-        $tableInfo = $guest->table ? "table {$guest->table->number}" : "without table";
-        
-        // Check if guest has any sales (pending or completed)
-        $hasCompletedSales = $guest->sales()->where('status', 'completed')->count() > 0;
-        $hasPendingSales = $guest->sales()->where('status', 'pending')->count() > 0;
-        $hasAnySales = $guest->sales()->count() > 0;
-        
-        if ($hasCompletedSales) {
-            // Guest has completed sales - mark as left but don't delete
-            $guest->leave();
-            AuditLog::log('guest_left', "Guest {$guest->guest_name} left {$tableInfo}", $guest);
-            $message = 'Guest marked as left (has completed orders).';
-        } elseif ($hasPendingSales) {
-            // Guest has pending sales - cannot delete
-            if (request()->expectsJson() || request()->wantsJson()) {
+        $guest = TableGuest::find($guest);
+        if (!$guest) {
+            if (request()->expectsJson() || request()->wantsJson() || request()->ajax()) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot delete guest with pending orders. Please complete or cancel the orders first.',
-                ], 422);
+                    'success' => true,
+                    'message' => 'Guest already removed.',
+                ]);
             }
-            return back()->with('error', 'Cannot delete guest with pending orders. Please complete or cancel the orders first.');
-        } else {
-            // No sales at all - safe to delete
-            $guest->delete();
-            AuditLog::log('guest_removed', "Removed guest {$guest->guest_name} from {$tableInfo}", $guest);
-            $message = 'Guest deleted successfully.';
+            return back()->with('success', 'Guest already removed.');
         }
 
-        if (request()->expectsJson() || request()->wantsJson()) {
+        try {
+            DB::beginTransaction();
+
+            $tableInfo = $guest->table ? "table {$guest->table->number}" : "without table";
+            $guestName = $guest->guest_name;
+
+            $pendingSales = $guest->sales()->where('status', 'pending')->get();
+            foreach ($pendingSales as $sale) {
+                $sale->items()->delete();
+                $sale->delete();
+            }
+
+            if ($guest->sales()->exists()) {
+                $guest->leave();
+                AuditLog::log('guest_left', "Guest {$guestName} left {$tableInfo}");
+                $message = 'Guest removed from the list.';
+            } else {
+                $guest->delete();
+                AuditLog::log('guest_removed', "Removed guest {$guestName} from {$tableInfo}");
+                $message = 'Guest deleted successfully.';
+            }
+
+            DB::commit();
+
+            if (request()->expectsJson() || request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                ]);
+            }
+
+            return back()->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json([
-                'success' => true,
-                'message' => $message ?? 'Guest order closed successfully.',
-            ]);
+                'success' => false,
+                'message' => 'Failed to delete guest: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return back()->with('success', $message ?? 'Guest removed successfully.');
     }
 
     /**
@@ -389,10 +480,16 @@ class TableController extends Controller
             return back()->with('error', 'Table is not occupied.');
         }
 
-        // Mark all active guests as left
+        // Mark all active guests as left (this also deletes their pending orders)
         $table->activeGuests->each(function ($guest) {
             $guest->leave();
         });
+
+        $leftoverPending = Sale::where('table_id', $table->id)->where('status', 'pending')->get();
+        foreach ($leftoverPending as $sale) {
+            $sale->items()->delete();
+            $sale->delete();
+        }
 
         $table->release();
 
@@ -414,28 +511,64 @@ class TableController extends Controller
      */
     public function getGuests(Table $table)
     {
-        $guests = $table->activeGuests()->with('customer')->get();
-        
-        return response()->json([
-            'table' => [
-                'id' => $table->id,
-                'number' => $table->number,
-                'name' => $table->name,
-                'capacity' => $table->capacity,
-                'location' => $table->location,
-                'status' => $table->status,
-            ],
-            'guests' => $guests->map(function ($guest) {
-                return [
-                    'id' => $guest->id,
-                    'guest_name' => $guest->guest_name,
-                    'customer' => $guest->customer ? [
-                        'id' => $guest->customer->id,
-                        'name' => $guest->customer->name,
-                    ] : null,
-                ];
-            }),
-        ]);
+        try {
+            $guests = $table->activeGuests()->with('customer')->orderBy('id')->get();
+            $pendingByGuest = Sale::query()
+                ->where('status', 'pending')
+                ->whereIn('table_guest_id', $guests->pluck('id')->filter())
+                ->withCount('items')
+                ->get()
+                ->keyBy('table_guest_id');
+
+            return response()->json([
+                'table' => [
+                    'id' => $table->id,
+                    'number' => $table->number,
+                    'name' => $table->name,
+                    'capacity' => $table->capacity,
+                    'location' => $table->location,
+                    'status' => $table->status,
+                ],
+                'guests' => $guests->map(function ($guest) use ($pendingByGuest) {
+                    $pendingSale = $pendingByGuest->get($guest->id);
+                    return [
+                        'id' => $guest->id,
+                        'guest_name' => $guest->guest_name,
+                        'customer' => $guest->customer ? [
+                            'id' => $guest->customer->id,
+                            'name' => $guest->customer->name,
+                        ] : null,
+                        'pending_items_count' => $pendingSale->items_count ?? 0,
+                        'pending_total' => $pendingSale->total ?? 0,
+                    ];
+                }),
+            ]);
+        } catch (\Throwable $e) {
+            $guests = $table->activeGuests()->with('customer')->orderBy('id')->get();
+
+            return response()->json([
+                'table' => [
+                    'id' => $table->id,
+                    'number' => $table->number,
+                    'name' => $table->name,
+                    'capacity' => $table->capacity,
+                    'location' => $table->location,
+                    'status' => $table->status,
+                ],
+                'guests' => $guests->map(function ($guest) {
+                    return [
+                        'id' => $guest->id,
+                        'guest_name' => $guest->guest_name,
+                        'customer' => $guest->customer ? [
+                            'id' => $guest->customer->id,
+                            'name' => $guest->customer->name,
+                        ] : null,
+                        'pending_items_count' => 0,
+                        'pending_total' => 0,
+                    ];
+                }),
+            ]);
+        }
     }
 
     /**

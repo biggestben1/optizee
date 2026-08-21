@@ -124,6 +124,11 @@ class User extends Authenticatable
         return $this->role && $this->role->name === 'accountant';
     }
 
+    public function isReceptionist(): bool
+    {
+        return $this->role && $this->role->name === 'receptionist';
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->role && $this->role->name === $role;
@@ -132,6 +137,11 @@ class User extends Authenticatable
     public function canAccessPOS(): bool
     {
         return $this->isManager() || $this->isSupervisor() || $this->isCashier();
+    }
+
+    public function canAccessHotelPOS(): bool
+    {
+        return $this->is_admin || $this->isManager() || $this->isSupervisor() || $this->isCashier() || $this->isReceptionist();
     }
 
     public function canManageStock(): bool
@@ -156,7 +166,7 @@ class User extends Authenticatable
 
     public function canViewReports(): bool
     {
-        return $this->isManager() || $this->isSupervisor() || $this->isAccountant();
+        return $this->isManager() || $this->isSupervisor() || $this->isAccountant() || $this->isReceptionist();
     }
 
     public function canViewFinancialReports(): bool
@@ -167,6 +177,14 @@ class User extends Authenticatable
     public function canAccessKitchen(): bool
     {
         return $this->isManager() || $this->isSupervisor() || $this->isKitchen() || $this->isCashier();
+    }
+
+    /**
+     * Start preparing / mark ready — kitchen staff only (not cashiers).
+     */
+    public function canControlKitchenOrders(): bool
+    {
+        return $this->is_admin || $this->isManager() || $this->isSupervisor() || $this->isKitchen();
     }
 
     public function getOpenShift(): ?Shift

@@ -80,7 +80,7 @@
         border-color: #5e72e4 !important;
     }
     #cart-items {
-        max-height: 400px;
+        max-height: none;
         overflow-y: auto;
     }
     .product-grid {
@@ -183,10 +183,60 @@
         font-weight: 600;
     }
     #cart-items {
-        max-height: calc(100vh - 350px);
-        min-height: 400px;
+        max-height: none;
+        min-height: 160px;
         overflow-y: auto;
         padding: 10px;
+        flex: 1;
+    }
+    .pos-cart-card {
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 170px);
+        min-height: 0;
+    }
+    .pos-cart-card > .card-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        padding: 0 !important;
+    }
+    .pos-cart-items-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .pos-action-bar {
+        flex-shrink: 0;
+        border-top: 1px solid #e9ecef;
+        background: #fff;
+        padding: 12px 16px 16px;
+    }
+    .table-guest-modal .modal-body,
+    .checkout-modal .modal-body {
+        max-height: calc(100vh - 180px);
+        overflow-y: auto;
+    }
+    #quickCreateTableModal {
+        z-index: 1065;
+    }
+    #add-guest-form-panel {
+        display: none;
+        border: 1px solid #cfe2ff;
+        background: #f8fbff;
+        border-radius: 0.5rem;
+        padding: 12px;
+        margin-top: 10px;
+    }
+    #add-guest-form-panel.is-open {
+        display: block;
+    }
+    #manageCustomerModal {
+        z-index: 1075;
     }
     
     .cart-item {
@@ -430,7 +480,7 @@
                     <i class="fe fe-refresh-cw"></i>
                 </button>
             </div>
-            <div class="card-body p-2" style="max-height: 150px; overflow-y: auto;" id="kitchen-orders-container">
+            <div class="card-body p-2" style="max-height: 90px; overflow-y: auto;" id="kitchen-orders-container">
                 @if($readyKitchenOrders->count() > 0)
                     @foreach($readyKitchenOrders as $order)
                     <div class="kitchen-order-item mb-2 p-2 border rounded" data-order-id="{{ $order->id }}">
@@ -465,7 +515,7 @@
         </div>
         
         <!-- Main Cart Card -->
-        <div class="card shadow-sm" style="min-height: 600px;">
+        <div class="card shadow-sm pos-cart-card">
             <div class="card-header bg-primary-transparent d-flex flex-wrap align-items-center gap-2 py-3">
                 <h4 class="card-title mb-0 flex-grow-1 fw-bold" id="cart-header">
                     <i class="fe fe-shopping-cart me-2"></i>Active Orders
@@ -494,8 +544,8 @@
                 </div>
                 
                 <!-- Cart Items Display (Always Visible) -->
-                <div class="p-4" style="min-height: 400px;">
-                    <div id="cart-items" style="min-height: 350px;">
+                <div class="pos-cart-items-wrap p-3">
+                    <div id="cart-items">
                         <p class="text-center text-muted py-5" id="empty-cart-message">Select a guest to start taking orders</p>
                     </div>
                 </div>
@@ -505,11 +555,49 @@
                     <!-- Tab panes will be added here dynamically -->
                 </div>
 
-                <hr>
+                <div id="order-info-display" class="alert alert-info mx-3 mb-2 py-2" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fe fe-grid me-1"></i>Table:</strong> <span id="order-table-name"></span>
+                            &nbsp;·&nbsp;
+                            <strong><i class="fe fe-user me-1"></i>Guest:</strong> <span id="order-guest-name"></span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearTableSelection()">
+                            <i class="fe fe-x"></i>
+                        </button>
+                    </div>
+                </div>
 
+                <div class="pos-action-bar">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">Total</span>
+                        <span class="fw-bold fs-4 text-primary" id="cart-footer-total">₦0.00</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-lg" onclick="openTableGuestModal()">
+                            <i class="fe fe-grid me-2"></i>
+                            <span id="table-guest-btn-label">Select Table &amp; Guest</span>
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" id="open-checkout-btn" onclick="openCheckoutModal()">
+                            <i class="fe fe-credit-card me-2"></i> Checkout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                <!-- Table Selection Section -->
-                <div class="card border-primary mb-3" id="table-section">
+<!-- Table & Guest Modal -->
+<div class="modal fade table-guest-modal" id="tableGuestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fe fe-grid me-2"></i>Select Table &amp; Guest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card border-primary mb-0" id="table-section">
                     <div class="card-header bg-primary-transparent">
                         <h5 class="card-title mb-0 text-primary">
                             <i class="fe fe-grid me-2"></i>Table & Guest Selection
@@ -601,9 +689,41 @@
                                 <i class="fe fe-info me-1"></i>
                                 <strong>Click on a guest card to select them.</strong> Each guest will have a separate bill.
                             </small>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-guest-btn" style="display: none;" onclick="showAddGuestModal()">
-                                <i class="fe fe-user-plus me-1"></i>Add New Guest to Table
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-guest-btn" style="display: none;" onclick="toggleAddGuestForm()">
+                                <i class="fe fe-user-plus me-1"></i><span id="add-guest-btn-label">Add New Guest to Table</span>
                             </button>
+
+                            <div id="add-guest-form-panel">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong class="text-primary"><i class="fe fe-user-plus me-1"></i>Add Guest</strong>
+                                    <button type="button" class="btn btn-sm btn-link text-muted p-0" onclick="toggleAddGuestForm(false)" aria-label="Close">
+                                        <i class="fe fe-x"></i>
+                                    </button>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label mb-1">Guest Name <span class="text-danger">*</span></label>
+                                    <input type="text" id="guest-name-input" class="form-control" placeholder="e.g., Table 1 Seat 1">
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="fe fe-info me-1"></i>
+                                        Auto-format: leave blank or edit the pre-filled "Table X Seat Y" name
+                                    </small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label mb-1">Link to Customer Account (Optional)</label>
+                                    <select id="guest-customer-select" class="form-select">
+                                        <option value="">No Customer Account</option>
+                                        @foreach($customers as $customer)
+                                        <option value="{{ $customer->id }}">{{ $customer->name }} ({{ $customer->phone }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAddGuestForm(false)">Cancel</button>
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="submitAddGuest()">
+                                        <i class="fe fe-check me-1"></i>Add Guest
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- No Table Selected Message -->
@@ -614,8 +734,32 @@
                     </div>
                 </div>
 
-                <!-- Customer Selection (Walk-in vs Credit) -->
-                <div class="px-3 mb-4">
+                <div class="alert alert-info mt-3 mb-0" id="quick-guide">
+                    <h6 class="alert-heading"><i class="fe fe-info me-2"></i>How to take orders</h6>
+                    <ol class="mb-0 small">
+                        <li>Select or create a table</li>
+                        <li>Add guests, then click a guest card</li>
+                        <li>Add products, then tap Checkout</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fe fe-credit-card me-2"></i>Checkout</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
                     <label class="form-label fw-bold mb-2 text-primary"><i class="fe fe-user me-1"></i>Customer Category</label>
                     <div class="d-flex gap-3 mb-3 p-2 bg-light rounded shadow-sm">
                         <div class="form-check">
@@ -655,36 +799,7 @@
                     </div>
                 </div>
 
-                <!-- Quick Guide -->
-                <div class="alert alert-info mb-3" id="quick-guide">
-                    <h6 class="alert-heading"><i class="fe fe-info me-2"></i>How to Take Orders for Different Customers at a Table:</h6>
-                    <ol class="mb-0 small">
-                        <li><strong>Create/Select Table:</strong> Click "Quick Create Table" or select from dropdown</li>
-                        <li><strong>Add Guests:</strong> Click "Add New Guest" button and enter guest names</li>
-                        <li><strong>Link Customers (Optional):</strong> Link guests to customer accounts for credit sales</li>
-                        <li><strong>Select Guest:</strong> Click on a guest card to select them for the order</li>
-                        <li><strong>Add Items:</strong> Browse products and add to cart</li>
-                        <li><strong>Complete Sale:</strong> Process payment for that guest</li>
-                        <li><strong>Repeat:</strong> Select another guest and repeat for their orders</li>
-                    </ol>
-                    <p class="mb-0 mt-2"><strong>Tip:</strong> Each guest must be selected separately to create individual bills.</p>
-                </div>
-
-                <!-- Table/Guest Info Display in Cart -->
-                <div id="order-info-display" class="alert alert-info mb-4" style="display: none;">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong><i class="fe fe-grid me-1"></i>Table:</strong> <span id="order-table-name"></span><br>
-                            <strong><i class="fe fe-user me-1"></i>Guest:</strong> <span id="order-guest-name"></span>
-                            <br><small class="text-muted"><i class="fe fe-info me-1"></i>Items will be assigned to this guest</small>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearTableSelection()">
-                            <i class="fe fe-x"></i> Clear
-                        </button>
-                    </div>
-                </div>
-
-                <div class="px-3 mb-4">
+                <div class="mb-4">
                     <div class="d-flex justify-content-between mb-3">
                         <span class="fw-semibold">Subtotal:</span>
                         <span id="subtotal" class="fw-semibold">₦0.00</span>
@@ -700,41 +815,39 @@
                         </div>
                         <span id="vat-amount" class="fw-semibold">₦0.00</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-4 pt-3 border-top">
+                    <div class="d-flex justify-content-between mb-0 pt-3 border-top">
                         <span class="fw-bold fs-5">Total:</span>
                         <span class="fw-bold fs-5 text-primary" id="total">₦0.00</span>
                     </div>
                 </div>
 
-                <div class="px-3 mb-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Payment Method</label>
-                        <select id="payment-method" class="form-select">
-                            <option value="cash">Cash</option>
-                            <option value="transfer">Bank Transfer</option>
-                            <option value="pos">POS</option>
-                            <option value="credit">Credit (Customer Account)</option>
-                        </select>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Payment Method</label>
+                    <select id="payment-method" class="form-select">
+                        <option value="cash">Cash</option>
+                        <option value="transfer">Bank Transfer</option>
+                        <option value="pos">POS</option>
+                        <option value="credit">Credit (Customer Account)</option>
+                    </select>
+                </div>
 
-                    <div class="mb-3" id="amount-paid-group">
-                        <label class="form-label fw-semibold">Amount Received</label>
-                        <input type="text" id="amount-paid" class="form-control form-control-lg" value="" placeholder="Enter amount received (click to auto-fill total)" onkeyup="formatAmountInput(this); calculateChange()" oninput="formatAmountInput(this); calculateChange()" onclick="autoFillAmount()">
-                        <div class="mt-2">
-                            <small class="text-muted">Entered: <span id="amount-paid-display" class="fw-bold">₦0.00</span></small>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-3 pt-2 border-top" id="change-group">
-                        <span class="fw-bold">Change:</span>
-                        <span id="change" class="text-success fw-bold fs-5">₦0.00</span>
+                <div class="mb-3" id="amount-paid-group">
+                    <label class="form-label fw-semibold">Amount Received</label>
+                    <input type="text" id="amount-paid" class="form-control form-control-lg" value="" placeholder="Enter amount received (click to auto-fill total)" onkeyup="formatAmountInput(this); calculateChange()" oninput="formatAmountInput(this); calculateChange()" onclick="autoFillAmount()">
+                    <div class="mt-2">
+                        <small class="text-muted">Entered: <span id="amount-paid-display" class="fw-bold">₦0.00</span></small>
                     </div>
                 </div>
 
+                <div class="d-flex justify-content-between mb-3 pt-2 border-top" id="change-group">
+                    <span class="fw-bold">Change:</span>
+                    <span id="change" class="text-success fw-bold fs-5">₦0.00</span>
+                </div>
+            </div>
+            <div class="modal-footer d-block">
                 <button class="btn btn-outline-info btn-lg w-100 mb-2" id="print-order-btn" onclick="printOrderPreview()" disabled>
                     <i class="fe fe-printer me-2"></i> Print Order Preview
                 </button>
-
                 <button type="button" class="btn btn-primary btn-lg w-100" id="checkout-btn" onclick="checkout()">
                     <i class="fe fe-check-circle me-2"></i> Complete Sale
                 </button>
@@ -749,13 +862,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Sale Complete</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" onclick="closeReceiptModal()" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="receipt-content">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" id="close-order-btn" onclick="closeGuestOrder()" style="display: none;">
+                <button type="button" class="btn btn-secondary" onclick="closeReceiptModal()">Close</button>
+                <button type="button" class="btn btn-success" id="close-order-btn" onclick="closeTableAfterSale()" style="display: none;">
                     <i class="fe fe-check-circle me-2"></i> Close Order
                 </button>
                 <button type="button" class="btn btn-primary" onclick="printReceipt()">
@@ -795,42 +908,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="quickCreateTable()">Create & Select</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Guest Modal -->
-<div class="modal fade" id="addGuestModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Guest to Table</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Guest Name <span class="text-danger">*</span></label>
-                    <input type="text" id="guest-name-input" class="form-control" placeholder="e.g., Table 1 Seat 1" required>
-                    <small class="text-muted d-block mt-2">
-                        <i class="fe fe-info me-1"></i>
-                        <strong>Auto-format:</strong> Leave blank or edit the pre-filled "Table X Seat Y" format
-                    </small>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Link to Customer Account (Optional)</label>
-                    <select id="guest-customer-select" class="form-select">
-                        <option value="">No Customer Account</option>
-                        @foreach($customers as $customer)
-                        <option value="{{ $customer->id }}">{{ $customer->name }} ({{ $customer->phone }})</option>
-                        @endforeach
-                    </select>
-                    <small class="text-muted">Link this guest to a customer account for credit sales</small>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitAddGuest()">Add Guest</button>
             </div>
         </div>
     </div>
@@ -877,6 +954,43 @@ let cart = [];
 let currentGuestId = null; // Track currently selected guest ID
 let guestData = {}; // Store guest data including customer_id
 let activeGuestOrders = {}; // Store multiple guest orders: {guestId: {cart: [], guestName: '', tableId: '', customerId: null}}
+
+function printHtmlInNewWindow(html) {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert('Popup blocked. Please allow popups for this site, or use Ctrl+P to print.');
+        return false;
+    }
+
+    const autoPrintScript = `
+        <script>
+            (function () {
+                function closePrintWindow() {
+                    window.close();
+                }
+                window.addEventListener('afterprint', closePrintWindow);
+                window.addEventListener('load', function () {
+                    setTimeout(function () {
+                        window.print();
+                        setTimeout(closePrintWindow, 500);
+                    }, 200);
+                });
+            })();
+        <\/script>
+    `;
+
+    let output = html;
+    if (/<\/body>/i.test(output)) {
+        output = output.replace(/<\/body>/i, autoPrintScript + '</body>');
+    } else {
+        output += autoPrintScript;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(output);
+    printWindow.document.close();
+    return true;
+}
 
 function handleProductClick(element) {
     try {
@@ -1139,8 +1253,10 @@ function loadPendingOrdersForTable(tableId) {
     
     fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}`, {
         method: 'GET',
+        cache: 'no-store',
         headers: {
             'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         }
     })
@@ -1309,7 +1425,9 @@ function loadPendingOrderToCart(orderId, guestId) {
             
             alert('Order loaded successfully! You can now edit or complete the sale.');
         } else {
-            alert('Order loaded but no items found.');
+            if (data.message && data.message !== 'No pending order found.') {
+                console.log(data.message);
+            }
         }
     })
     .catch(error => {
@@ -1342,46 +1460,59 @@ function printPendingOrder(orderId) {
 }
 
 // Delete a single pending order
+function deletePendingOrderRequest(orderId) {
+    return fetch(`{{ url('/admin/pos/pending') }}/${orderId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({})
+    })
+    .then(async response => {
+        const text = await response.text();
+        let data = {};
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(text.substring(0, 120) || 'Server did not return JSON');
+        }
+        return { ok: response.ok, data };
+    });
+}
+
+// Delete a single pending order
 function deletePendingOrder(orderId) {
     if (!confirm('Are you sure you want to delete this pending order? This cannot be undone.')) {
         return;
     }
-    
-    fetch(`{{ route("admin.pos.delete-pending", ":id") }}`.replace(':id', orderId), {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Reload pending orders for the current table
-            const tableId = document.getElementById('table-select').value;
-            if (tableId) {
-                loadPendingOrdersForTable(tableId);
-            }
-            
-            // If this was the current guest's order, clear the cart
-            const guestSelect = document.getElementById('guest-select');
-            if (guestSelect && guestSelect.value) {
-                const currentGuestId = guestSelect.value;
-                // Check if this order belonged to current guest
-                // If so, clear their cart and activeGuestOrders
-                if (activeGuestOrders[currentGuestId]) {
-                    activeGuestOrders[currentGuestId].cart = [];
-                    if (currentGuestId === document.getElementById('guest-select').value) {
-                        cart = [];
-                        renderCart();
-                        updateTotals();
-                    }
-                    updateGuestTabBadge(currentGuestId);
-                }
-            }
-        } else {
+
+    deletePendingOrderRequest(orderId)
+    .then(({ ok, data }) => {
+        if (!ok && !data.success) {
             alert('Error: ' + (data.message || 'Failed to delete pending order'));
+            return;
+        }
+
+        const tableId = document.getElementById('table-select').value;
+        if (tableId) {
+            loadPendingOrdersForTable(tableId);
+        }
+
+        const guestSelect = document.getElementById('guest-select');
+        if (guestSelect && guestSelect.value) {
+            const selectedGuestId = guestSelect.value;
+            if (activeGuestOrders[selectedGuestId]) {
+                activeGuestOrders[selectedGuestId].cart = [];
+                if (String(currentGuestId) === String(selectedGuestId)) {
+                    cart = [];
+                    renderCart();
+                    updateTotals();
+                }
+                updateGuestTabBadge(selectedGuestId);
+            }
         }
     })
     .catch(error => {
@@ -1396,87 +1527,8 @@ function printPendingOrderReceipt(sale, items) {
     const discount = sale.discount || 0;
     const vat = sale.tax || 0;
     const total = sale.total || 0;
-    
-    const printWindow = window.open('', '_blank');
-    
-    // Check if popup was blocked
-    if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
-        // Popup blocked - create a print-friendly div in current window instead
-        const printContent = `
-            <div id="print-receipt-content" style="display: none;">
-                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto;">
-                    <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">
-                        <img src="{{ asset('logo.jpg') }}" alt="Optizee Hotel and Suites" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
-                        <h2>PENDING ORDER</h2>
-                        <p><strong>Invoice:</strong> ${sale.invoice_number || sale.id}</p>
-                        <span style="background: #ffc107; color: #000; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 10px 0;">PENDING PAYMENT</span>
-                    </div>
-                    <div style="margin: 10px 0;">
-                        <p><strong>Date:</strong> ${sale.created_at ? new Date(sale.created_at).toLocaleString() : new Date().toLocaleString()}</p>
-                        ${sale.guest_name ? `<p><strong>Guest:</strong> ${sale.guest_name}</p>` : ''}
-                        ${sale.customer_name ? `<p><strong>Customer:</strong> ${sale.customer_name}</p>` : ''}
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                        <thead>
-                            <tr>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f2f2f2;">Item</th>
-                                <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f2f2f2;">Qty</th>
-                                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd; background-color: #f2f2f2;">Price</th>
-                                <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd; background-color: #f2f2f2;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(item => `
-                                <tr>
-                                    <td style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">${item.name}</td>
-                                    <td style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">${item.quantity}</td>
-                                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;">₦${formatCurrency(item.unit_price)}</td>
-                                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;">₦${formatCurrency((item.unit_price * item.quantity) - (item.discount || 0))}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                    <div style="text-align: right; margin-top: 20px;">
-                        <p>Subtotal: ₦${formatCurrency(subtotal)}</p>
-                        ${discount > 0 ? `<p>Discount: ₦${formatCurrency(discount)}</p>` : ''}
-                        <p style="font-size: 18px; font-weight: bold; color: #5e72e4;">Total: ₦${formatCurrency(total)}</p>
-                    </div>
-                    <div style="text-align: center; margin-top: 30px; color: #856404; padding: 15px; background: #fff9e6; border-radius: 4px;">
-                        <p><strong>This is a pending order.</strong></p>
-                        <p>Payment not yet received.</p>
-                    </div>
-                    <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
-                        <p style="margin-bottom: 5px;"><strong>Bank Transfer Details:</strong></p>
-                        <p style="margin-bottom: 2px;"><strong>Bank:</strong> MONIEPOINT</p>
-                        <p style="margin-bottom: 2px;"><strong>Account Number:</strong> 5686138899</p>
-                        <p style="margin-bottom: 0;"><strong>Account Name:</strong> SUNNY AKHAMIORKHOR</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Create and show print content
-        let printDiv = document.getElementById('print-receipt-content');
-        if (!printDiv) {
-            printDiv = document.createElement('div');
-            printDiv.id = 'print-receipt-content';
-            document.body.appendChild(printDiv);
-        }
-        printDiv.innerHTML = printContent;
-        printDiv.style.display = 'block';
-        
-        // Print
-        window.print();
-        
-        // Remove after printing
-        setTimeout(() => {
-            printDiv.style.display = 'none';
-        }, 1000);
-        
-        return;
-    }
-    
-    printWindow.document.write(`
+
+    printHtmlInNewWindow(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -1545,29 +1597,6 @@ function printPendingOrderReceipt(sale, items) {
         </body>
         </html>
     `);
-    // Check if window is still available before closing document
-    if (printWindow && printWindow.document) {
-        printWindow.document.close();
-        
-        // Wait for content to load before printing
-        printWindow.onload = function() {
-            setTimeout(function() {
-                if (printWindow && !printWindow.closed) {
-                    printWindow.print();
-                }
-            }, 250);
-        };
-        
-        // Fallback if onload doesn't fire
-        setTimeout(function() {
-            if (printWindow && !printWindow.closed && printWindow.document && printWindow.document.readyState === 'complete') {
-                printWindow.print();
-            }
-        }, 500);
-    } else {
-        // Popup was blocked, show alert
-        alert('Popup was blocked. Please allow popups for this site and try again, or use the Print button in the cart.');
-    }
 }
 
 // Get customer ID from guest data
@@ -1587,7 +1616,7 @@ function getGuestCustomerId(guestId) {
 // Save pending order to database
 function savePendingOrder(tableId, guestId, showIndicator = true) {
     // Always save if table and guest are selected, even if cart is empty (to clear pending order)
-    if (!tableId || !guestId) {
+    if (!tableId || !guestId || window.skipPendingSave) {
         console.log('Skipping save - tableId:', tableId, 'guestId:', guestId);
         return Promise.resolve();
     }
@@ -1622,20 +1651,10 @@ function savePendingOrder(tableId, guestId, showIndicator = true) {
         .then(response => response.json())
         .then(data => {
             if (data.success && data.sale && data.sale.id) {
-                // Delete the pending order
-                return fetch(`{{ route("admin.pos.delete-pending", ":id") }}`.replace(':id', data.sale.id), {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(deleteData => {
+                return deletePendingOrderRequest(data.sale.id)
+                .then(({ data: deleteData }) => {
                     if (deleteData.success) {
                         console.log('Pending order deleted for empty cart');
-                        // Reload pending orders list
                         loadPendingOrdersForTable(tableId);
                     }
                     return deleteData;
@@ -2120,7 +2139,13 @@ function loadPendingOrderForGuest(tableId, guestId) {
         }
         
         // First, get guest data to get customer_id
-        fetch(`/admin/tables/${tableId}/guests`)
+        fetch(`/admin/tables/${tableId}/guests`, {
+        cache: 'no-store',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
             .then(response => response.json())
             .then(guestsData => {
                 const guest = guestsData.guests.find(g => g.id == guestId);
@@ -2506,9 +2531,14 @@ function updateTotals() {
     
     const total = subtotal - discount + vatAmount;
     
-    document.getElementById('subtotal').textContent = '₦' + formatCurrency(subtotal);
-    document.getElementById('vat-amount').textContent = '₦' + formatCurrency(vatAmount);
-    document.getElementById('total').textContent = '₦' + formatCurrency(total);
+    const subtotalEl = document.getElementById('subtotal');
+    const vatEl = document.getElementById('vat-amount');
+    const totalEl = document.getElementById('total');
+    if (subtotalEl) subtotalEl.textContent = '₦' + formatCurrency(subtotal);
+    if (vatEl) vatEl.textContent = '₦' + formatCurrency(vatAmount);
+    if (totalEl) totalEl.textContent = '₦' + formatCurrency(total);
+    const cartFooterTotal = document.getElementById('cart-footer-total');
+    if (cartFooterTotal) cartFooterTotal.textContent = '₦' + formatCurrency(total);
     
     calculateChange();
 }
@@ -2645,8 +2675,18 @@ if (document.readyState === 'loading') {
     initCreditCustomerSelectHandlers();
 }
 
+document.addEventListener('shown.bs.modal', function() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(function(backdrop, index) {
+        backdrop.style.zIndex = String(1050 + (index * 10));
+    });
+});
+
 // Update guest's customer
 function updateGuestCustomer(guestId, customerId) {
+    if (!guestId) {
+        return;
+    }
     // Show/hide manage-customer-btn based on customer selection
     const manageBtn = document.getElementById('manage-customer-btn');
     if (manageBtn) {
@@ -2854,21 +2894,37 @@ function loadTableGuests() {
     const tableInfo = document.getElementById('table-info');
     const noTableMessage = document.getElementById('no-table-message');
     const addGuestBtn = document.getElementById('add-guest-btn');
-    
+
+    // Keep add-guest panel closed when switching tables
+    if (typeof toggleAddGuestForm === 'function') {
+        toggleAddGuestForm(false);
+    } 
     if (!tableId) {
         guestsSection.style.display = 'none';
         tableInfo.style.display = 'none';
         noTableMessage.style.display = 'block';
-        document.getElementById('quick-guide').style.display = 'block';
+        const quickGuide = document.getElementById('quick-guide');
+        if (quickGuide) quickGuide.style.display = 'block';
+        if (addGuestBtn) addGuestBtn.style.display = 'none';
         guestSelect.value = '';
+        updateOrderInfoDisplay();
         return;
     }
-    
-            noTableMessage.style.display = 'none';
-            document.getElementById('quick-guide').style.display = 'none';
+
+    noTableMessage.style.display = 'none';
+    const quickGuide = document.getElementById('quick-guide');
+    if (quickGuide) quickGuide.style.display = 'none';
+    guestsSection.style.display = 'block';
+    if (addGuestBtn) addGuestBtn.style.display = 'block';
             
             // Fetch table details and guests
-    fetch(`/admin/tables/${tableId}/guests`)
+    fetch(`/admin/tables/${tableId}/guests`, {
+        cache: 'no-store',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
         .then(response => response.json())
         .then(data => {
             // Show table info
@@ -2921,7 +2977,10 @@ function loadTableGuests() {
                     guestCard.style.transition = 'all 0.2s';
                     guestCard.onmouseenter = function() { this.style.backgroundColor = '#f0f0f0'; };
                     guestCard.onmouseleave = function() { this.style.backgroundColor = ''; };
-                    guestCard.onclick = function() {
+                    guestCard.onclick = function(e) {
+                        if (e.target.closest('.guest-delete-btn')) {
+                            return;
+                        }
                         const tableId = document.getElementById('table-select').value;
                         const selectedGuestId = guest.id;
                         const selectedGuestName = guest.guest_name;
@@ -2931,42 +2990,33 @@ function loadTableGuests() {
                         
                         // Add or activate this guest's order (this will load pending order from DB)
                         activateGuestOrder(selectedGuestId, selectedGuestName, tableId);
+                        closeTableGuestModal();
                     };
-                    
-                    // Check if this guest has a pending order and show indicator
-                    if (guest.id) {
-                        fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}&table_guest_id=${guest.id}`, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.items && data.items.length > 0) {
-                                // Add pending order badge to guest card
-                                const badge = document.createElement('span');
-                                badge.className = 'badge bg-warning text-dark ms-2';
-                                badge.textContent = `${data.items.length} item(s) - ₦${formatCurrency(data.sale?.total || 0)}`;
-                                badge.title = 'Pending order - Click to load';
-                                guestCard.querySelector('.d-flex').appendChild(badge);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error checking pending order for guest:', error);
-                        });
-                    }
+
+                    const pendingBadge = (guest.pending_items_count > 0)
+                        ? `<span class="badge bg-warning text-dark ms-2">${guest.pending_items_count} item(s) - ₦${formatCurrency(guest.pending_total || 0)}</span>`
+                        : '';
                     
                     guestCard.innerHTML = `
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>${guest.guest_name}</strong>
                                 ${guest.customer ? `<br><small class="text-muted">${guest.customer.name}</small>` : ''}
+                                ${pendingBadge}
                             </div>
-                            <i class="fe fe-user text-primary"></i>
+                            <button type="button" class="btn btn-sm btn-outline-danger guest-delete-btn" title="Delete guest" data-guest-id="${guest.id}" data-guest-name="${guest.guest_name.replace(/"/g, '&quot;')}">
+                                <i class="fe fe-trash-2"></i>
+                            </button>
                         </div>
                     `;
+                    const deleteBtn = guestCard.querySelector('.guest-delete-btn');
+                    if (deleteBtn) {
+                        deleteBtn.onclick = function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            deleteGuestFromList(guest.id, guest.guest_name);
+                        };
+                    }
                     
                     guestsList.appendChild(guestCard);
                 });
@@ -2987,50 +3037,188 @@ function loadTableGuests() {
         })
         .catch(error => {
             console.error('Error loading guests:', error);
-            guestsSection.style.display = 'none';
+            guestsSection.style.display = 'block';
+            if (addGuestBtn) addGuestBtn.style.display = 'block';
         });
 }
 
-function showAddGuestModal() {
+function deleteGuestFromList(guestId, guestName) {
+    if (!guestId) {
+        return;
+    }
+    if (!confirm(`Delete ${guestName || 'this guest'} from this table? Pending orders for this guest will also be deleted.`)) {
+        return;
+    }
+
+    window.skipPendingSave = true;
+    clearTimeout(window.autoSaveTimeout);
+
+    fetch(`{{ url('/admin/tables/guests') }}/${guestId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({})
+    })
+    .then(async response => {
+        const text = await response.text();
+        let data = {};
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(text.substring(0, 120) || 'Server did not return JSON');
+        }
+        return { ok: response.ok, data };
+    })
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) {
+            window.skipPendingSave = false;
+            alert(data.message || 'Failed to delete guest.');
+            return;
+        }
+
+        document.querySelector(`.guest-card[data-guest-id="${guestId}"]`)?.remove();
+
+        if (String(currentGuestId) === String(guestId)) {
+            cart = [];
+            currentGuestId = null;
+            delete activeGuestOrders[guestId];
+            renderCart();
+            updateTotals();
+            const indicator = document.getElementById('selected-guest-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        } else if (activeGuestOrders[guestId]) {
+            delete activeGuestOrders[guestId];
+        }
+
+        const tabButton = document.getElementById(`tab-${guestId}`)?.closest('li');
+        if (tabButton) {
+            tabButton.remove();
+        }
+
+        const tableId = document.getElementById('table-select').value;
+        if (tableId) {
+            loadTableGuests();
+        }
+        setTimeout(() => { window.skipPendingSave = false; }, 1000);
+    })
+    .catch(error => {
+        window.skipPendingSave = false;
+        console.error('Error deleting guest:', error);
+        alert('Could not delete guest: ' + (error.message || 'Please try again.'));
+    });
+}
+
+function getPosModal(id) {
+    const el = document.getElementById(id);
+    if (!el || typeof bootstrap === 'undefined') return null;
+    return bootstrap.Modal.getOrCreateInstance(el);
+}
+
+function openTableGuestModal() {
+    const modal = getPosModal('tableGuestModal');
+    if (modal) modal.show();
+}
+
+function closeTableGuestModal() {
+    const el = document.getElementById('tableGuestModal');
+    const modal = el && typeof bootstrap !== 'undefined' ? bootstrap.Modal.getInstance(el) : null;
+    if (modal) modal.hide();
+}
+
+function initCheckoutSelect2() {
+    try {
+        if (typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') return;
+        const $sel = $('#customer-select');
+        if (!$sel.length) return;
+        if ($sel.hasClass('select2-hidden-accessible')) {
+            $sel.select2('destroy');
+        }
+        $sel.select2({
+            dropdownParent: $('#checkoutModal'),
+            width: '100%'
+        });
+    } catch (e) {
+        console.warn('Checkout Select2 init failed:', e);
+    }
+}
+
+function openCheckoutModal() {
+    if (!cart.length) {
+        alert('Cart is empty!');
+        return;
+    }
+    updateTotals();
+    initCheckoutSelect2();
+    const modal = getPosModal('checkoutModal');
+    if (modal) modal.show();
+}
+
+function closeCheckoutModal() {
+    const el = document.getElementById('checkoutModal');
+    const modal = el && typeof bootstrap !== 'undefined' ? bootstrap.Modal.getInstance(el) : null;
+    if (modal) modal.hide();
+}
+
+function toggleAddGuestForm(forceOpen) {
     const tableId = document.getElementById('table-select').value;
-    if (!tableId) {
+    const panel = document.getElementById('add-guest-form-panel');
+    const btnLabel = document.getElementById('add-guest-btn-label');
+    if (!panel) return;
+
+    const shouldOpen = typeof forceOpen === 'boolean'
+        ? forceOpen
+        : !panel.classList.contains('is-open');
+
+    if (shouldOpen && !tableId) {
         alert('Please select a table first');
         return;
     }
-    
+
+    if (!shouldOpen) {
+        panel.classList.remove('is-open');
+        if (btnLabel) btnLabel.textContent = 'Add New Guest to Table';
+        return;
+    }
+
     // Get table number and existing guests count
     const tableOption = document.querySelector(`#table-select option[value="${tableId}"]`);
     const tableText = tableOption ? tableOption.textContent : '';
     const tableNumber = tableText.split(' - ')[0].trim();
-    
-    // Get the existing guests list
+
     const guestsList = document.getElementById('guests-list');
     const existingGuestCount = guestsList ? guestsList.querySelectorAll('.guest-card').length : 0;
     const nextSeatNumber = existingGuestCount + 1;
-    
-    // Auto-generate guest name
     const autoGeneratedName = `Table ${tableNumber} Seat ${nextSeatNumber}`;
-    
-    // Set the auto-generated name in the input field
+
     const guestNameInput = document.getElementById('guest-name-input');
-    guestNameInput.value = autoGeneratedName;
-    guestNameInput.placeholder = autoGeneratedName;
-    
-    // Clear customer select
-    document.getElementById('guest-customer-select').value = '';
-    
-    // Show modal for adding guest
-    const modal = document.getElementById('addGuestModal');
-    if (modal) {
-        const bootstrapModal = new bootstrap.Modal(modal);
-        bootstrapModal.show();
-        
-        // Auto-focus and select the guest name input for easy editing
-        setTimeout(() => {
+    if (guestNameInput) {
+        guestNameInput.value = autoGeneratedName;
+        guestNameInput.placeholder = autoGeneratedName;
+    }
+
+    const customerSelect = document.getElementById('guest-customer-select');
+    if (customerSelect) customerSelect.value = '';
+
+    panel.classList.add('is-open');
+    if (btnLabel) btnLabel.textContent = 'Hide Add Guest';
+
+    setTimeout(() => {
+        if (guestNameInput) {
             guestNameInput.focus();
             guestNameInput.select();
-        }, 300);
-    }
+        }
+    }, 50);
+}
+
+// Keep old name as alias for any remaining callers
+function showAddGuestModal() {
+    toggleAddGuestForm(true);
 }
 
 function addGuestToTable(tableId, guestName, customerId) {
@@ -3038,42 +3226,47 @@ function addGuestToTable(tableId, guestName, customerId) {
         alert('Please select a table first');
         return Promise.reject(new Error('Missing tableId'));
     }
-    
-    return fetch(`/admin/tables/${tableId}/add-guest`, {
+
+    const body = new URLSearchParams();
+    body.append('table_id', tableId);
+    body.append('guest_name', guestName);
+    if (customerId) {
+        body.append('customer_id', customerId);
+    }
+
+    return fetch(`{{ url('/admin/tables/add-guest') }}`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({
-            guest_name: guestName,
-            customer_id: customerId
-        })
+        body: body.toString()
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => Promise.reject(err));
+    .then(async response => {
+        const text = await response.text();
+        let data = {};
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(text.substring(0, 120) || 'Server did not return JSON');
         }
-        return response.json();
+        return { ok: response.ok, data };
     })
-    .then(data => {
-        if (data.success) {
-            // Clear form
-            document.getElementById('guest-name-input').value = '';
-            document.getElementById('guest-customer-select').value = '';
-            
-            // Close modal if open
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addGuestModal'));
-            if (modal) modal.hide();
-            
-            // Reload guests
-            loadTableGuests();
-            return data;
-        } else {
-            alert(data.error || data.message || 'Failed to add guest');
-            return Promise.reject(new Error(data.error || data.message || 'Failed to add guest'));
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) {
+            throw new Error(data.message || data.error || 'Failed to add guest');
         }
+
+        const nameInput = document.getElementById('guest-name-input');
+        const customerSelect = document.getElementById('guest-customer-select');
+        if (nameInput) nameInput.value = '';
+        if (customerSelect) customerSelect.value = '';
+
+        toggleAddGuestForm(false);
+        loadTableGuests();
+        return data;
     })
     .catch(error => {
         console.error('Error:', error);
@@ -3177,6 +3370,9 @@ function checkout() {
         alert('Cart is empty!');
         return;
     }
+
+    window.skipPendingSave = true;
+    clearTimeout(window.autoSaveTimeout);
     
     // If user selected "Credit Account" radio, force credit checkout
     const creditRadio = document.getElementById('category-credit');
@@ -3356,6 +3552,7 @@ function checkout() {
         console.log('Response data:', data);
         
         if (data.queued) {
+            window.skipPendingSave = false;
             alert(data.message || 'Saved offline. Will sync when internet is back.');
             // Re-enable button; keep cart so user can continue working
             checkoutBtn.disabled = false;
@@ -3364,78 +3561,61 @@ function checkout() {
         }
         
         if (data.success) {
-            showReceipt(data.sale);
-            
-            // Save current guest selection before clearing
+            const completedGuestId = data.sale?.table_guest_id || currentGuestId || document.getElementById('guest-select')?.value;
             const tableIdAfterSale = document.getElementById('table-select').value;
-            const currentGuestId = document.getElementById('guest-select').value;
-            const currentGuestData = document.getElementById('guest-select').getAttribute('data-selected-guest-id');
-            const savedGuestId = currentGuestId || currentGuestData;
-            
-            // Clear cart and payment fields, but KEEP table and guest selection
+
+            closeCheckoutModal();
+            showReceipt(data.sale);
+
+            if (completedGuestId) {
+                delete activeGuestOrders[completedGuestId];
+                const tabButton = document.getElementById(`tab-${completedGuestId}`)?.closest('li');
+                if (tabButton) {
+                    tabButton.remove();
+                }
+                document.querySelector(`.guest-card[data-guest-id="${completedGuestId}"]`)?.remove();
+            }
+
+            currentGuestId = null;
+            cart = [];
+            clearTimeout(window.autoSaveTimeout);
             clearCart();
             document.getElementById('discount').value = 0;
             document.getElementById('amount-paid').value = '';
-            // Clear the formatted display
             const amountPaidDisplay = document.getElementById('amount-paid-display');
             if (amountPaidDisplay) {
                 amountPaidDisplay.textContent = '₦0.00';
             }
             document.getElementById('customer-select').value = '';
             document.getElementById('payment-method').value = 'cash';
-            
-            // Update totals to show 0.00
+            document.getElementById('guest-select').value = '';
+            document.getElementById('guest-select').removeAttribute('data-selected-guest-id');
+
+            const indicator = document.getElementById('selected-guest-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+
             updateTotals();
             calculateChange();
-            
-            // Reload guests if table is selected to show updated bills
-            // BUT keep the current guest selected for next order
+            renderCart();
+
             if (tableIdAfterSale) {
-                // Refresh pending orders list immediately
-                loadPendingOrdersForTable(tableIdAfterSale);
-                
-                setTimeout(() => {
-                    loadTableGuests();
-                    // Restore guest selection after reload
-                    if (savedGuestId) {
-                        setTimeout(() => {
-                            const guestSelect = document.getElementById('guest-select');
-                            if (guestSelect) {
-                                guestSelect.value = savedGuestId;
-                                guestSelect.setAttribute('data-selected-guest-id', savedGuestId);
-                                
-                                // Restore active state on guest card
-                                const guestCards = document.querySelectorAll('.guest-card');
-                                guestCards.forEach(card => {
-                                    const cardGuestId = card.getAttribute('data-guest-id');
-                                    if (cardGuestId === savedGuestId) {
-                                        card.classList.add('border-primary', 'bg-primary-transparent');
-                                        
-                                        // Update selected guest indicator
-                                        const indicator = document.getElementById('selected-guest-indicator');
-                                        const guestNameSpan = document.getElementById('selected-guest-name');
-                                        if (indicator && guestNameSpan) {
-                                            const guestName = card.querySelector('strong')?.textContent || 'Selected Guest';
-                                            guestNameSpan.textContent = guestName;
-                                            indicator.style.display = 'block';
-                                        }
-                                    }
-                                });
-                                
-                                updateOrderInfoDisplay();
-                                updateCartHeader();
-                            }
-                        }, 500);
-                    }
-                }, 1000);
+                loadTableGuests();
             }
+
+            checkoutBtn.disabled = false;
+            checkoutBtn.innerHTML = '<i class="fe fe-check-circle me-2"></i> Complete Sale';
+            setTimeout(() => { window.skipPendingSave = false; }, 1500);
         } else {
+            window.skipPendingSave = false;
             alert(data.error || data.message || 'Failed to process sale.');
             checkoutBtn.disabled = false;
             checkoutBtn.innerHTML = '<i class="fe fe-check-circle me-2"></i> Complete Sale';
         }
     })
     .catch(error => {
+        window.skipPendingSave = false;
         console.error('Checkout error:', error);
         let errorMsg = 'Failed to process sale. ';
         
@@ -3576,10 +3756,36 @@ function showReceipt(sale) {
         closeOrderBtn.style.display = 'none';
     }
     
-    new bootstrap.Modal(document.getElementById('receiptModal')).show();
+    const modalEl = document.getElementById('receiptModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
+        backdrop: true,
+        keyboard: true
+    });
+    modal.show();
 }
 
-function closeGuestOrder() {
+function closeReceiptModal() {
+    const modalEl = document.getElementById('receiptModal');
+    if (!modalEl) {
+        return;
+    }
+
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) {
+        modal.hide();
+    }
+
+    modalEl.classList.remove('show');
+    modalEl.style.display = 'none';
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.removeAttribute('aria-modal');
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+}
+
+function closeTableAfterSale() {
     const closeOrderBtn = document.getElementById('close-order-btn');
     const tableId = closeOrderBtn.getAttribute('data-table-id');
     const guestId = closeOrderBtn.getAttribute('data-guest-id');
@@ -3822,31 +4028,7 @@ function printOrderPreview() {
             </html>
         `;
         
-        // Try to open print window
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        
-        if (!printWindow) {
-            // If popup blocked, try alternative method
-            alert('Popup blocked. Please allow popups for this site, or use Ctrl+P to print.');
-            return;
-        }
-        
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        
-        // Wait for content to load before printing
-        printWindow.onload = function() {
-            setTimeout(function() {
-                printWindow.print();
-            }, 250);
-        };
-        
-        // Fallback if onload doesn't fire
-        setTimeout(function() {
-            if (printWindow.document.readyState === 'complete') {
-                printWindow.print();
-            }
-        }, 500);
+        printHtmlInNewWindow(printContent);
         
     } catch (error) {
         console.error('Print error:', error);
@@ -3858,16 +4040,7 @@ function printReceipt() {
     try {
         const content = document.getElementById('receipt-content').innerHTML;
         
-        // Try to open print window
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        
-        if (!printWindow) {
-            // If popup blocked, try alternative method
-            alert('Popup blocked. Please allow popups for this site, or use Ctrl+P to print.');
-            return;
-        }
-        
-        printWindow.document.write(`
+        printHtmlInNewWindow(`
             <!DOCTYPE html>
             <html>
             <head>
@@ -3916,21 +4089,6 @@ function printReceipt() {
             <body>${content}</body>
             </html>
         `);
-        printWindow.document.close();
-        
-        // Wait for content to load before printing
-        printWindow.onload = function() {
-            setTimeout(function() {
-                printWindow.print();
-            }, 250);
-        };
-        
-        // Fallback if onload doesn't fire
-        setTimeout(function() {
-            if (printWindow.document.readyState === 'complete') {
-                printWindow.print();
-            }
-        }, 500);
         
     } catch (error) {
         console.error('Print error:', error);
@@ -4358,6 +4516,20 @@ function updateOrderInfoDisplay() {
     } else {
         orderInfoDisplay.style.display = 'none';
     }
+
+    const tableGuestBtnLabel = document.getElementById('table-guest-btn-label');
+    if (tableGuestBtnLabel) {
+        if (tableSelect && tableSelect.value) {
+            const tableOption = tableSelect.options[tableSelect.selectedIndex];
+            const tableName = tableOption ? tableOption.textContent.split(' - ')[0].trim() : 'Table';
+            const guestName = (guestSelect && guestSelect.value && guestSelect.options[guestSelect.selectedIndex])
+                ? guestSelect.options[guestSelect.selectedIndex].textContent
+                : 'Select guest';
+            tableGuestBtnLabel.textContent = tableName + ' · ' + guestName;
+        } else {
+            tableGuestBtnLabel.textContent = 'Select Table & Guest';
+        }
+    }
 }
 
 function clearTableSelection() {
@@ -4375,9 +4547,11 @@ function clearTableSelection() {
     document.getElementById('guests-section').style.display = 'none';
     document.getElementById('table-info').style.display = 'none';
     document.getElementById('no-table-message').style.display = 'block';
-    document.getElementById('quick-guide').style.display = 'block';
+    const quickGuide = document.getElementById('quick-guide');
+    if (quickGuide) quickGuide.style.display = 'block';
     
     updateCartHeader();
+    updateOrderInfoDisplay();
 }
 
 // Add kitchen order items to cart
@@ -4388,6 +4562,7 @@ function addKitchenOrderToCart(orderId) {
     
     if (!tableId || !guestId) {
         alert('Please select a table and guest first before adding kitchen items.');
+        openTableGuestModal();
         return;
     }
     
@@ -4456,6 +4631,160 @@ function addKitchenOrderToCart(orderId) {
 }
 
 // Refresh kitchen orders
+let kitchenStatusTracker = {};
+let kitchenPollInitialized = false;
+let kitchenRefreshInterval = null;
+
+const cashierSoundUrls = {
+    preparing: '{{ asset('sounds/cashier-preparing.wav') }}',
+    ready: '{{ asset('sounds/cashier-ready.wav') }}',
+    served: '{{ asset('sounds/cashier-served.wav') }}',
+};
+
+let cashierAudioCtx = null;
+const cashierDecodedBuffers = {};
+
+function getCashierAudioContext() {
+    if (!cashierAudioCtx) {
+        cashierAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (cashierAudioCtx.state === 'suspended') {
+        cashierAudioCtx.resume();
+    }
+    return cashierAudioCtx;
+}
+
+async function loadCashierSoundBuffer(url) {
+    if (cashierDecodedBuffers[url]) return cashierDecodedBuffers[url];
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = await getCashierAudioContext().decodeAudioData(arrayBuffer);
+    cashierDecodedBuffers[url] = buffer;
+    return buffer;
+}
+
+async function playLoudCashierSound(url, gainValue = 3.0) {
+    try {
+        const ctx = getCashierAudioContext();
+        const buffer = await loadCashierSoundBuffer(url);
+        const source = ctx.createBufferSource();
+        const gainNode = ctx.createGain();
+        source.buffer = buffer;
+        gainNode.gain.value = gainValue;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+    } catch (e) {
+        try {
+            const audio = new Audio(url);
+            audio.volume = 1.0;
+            await audio.play();
+        } catch (err) {
+            console.warn('Cashier kitchen sound failed:', err);
+        }
+    }
+}
+
+function playCashierPreparingSound() {
+    playLoudCashierSound(cashierSoundUrls.preparing, 4.2);
+}
+
+function playCashierReadySound() {
+    playLoudCashierSound(cashierSoundUrls.ready, 5.0);
+}
+
+function playCashierServedSound() {
+    playLoudCashierSound(cashierSoundUrls.served, 4.0);
+}
+
+// Unlock audio after first click (browser autoplay policy)
+document.addEventListener('click', function unlockCashierAudio() {
+    getCashierAudioContext();
+    Object.values(cashierSoundUrls).forEach(url => {
+        loadCashierSoundBuffer(url).catch(() => {});
+    });
+    document.removeEventListener('click', unlockCashierAudio);
+}, { once: true });
+
+function detectKitchenStatusSounds(data) {
+    const nextStatuses = {};
+
+    (data.pendingOrders || []).forEach(order => {
+        nextStatuses[order.id] = order.kitchen_status;
+    });
+    (data.readyOrders || []).forEach(order => {
+        nextStatuses[order.id] = order.kitchen_status || 'ready';
+    });
+    (data.servedOrders || []).forEach(order => {
+        nextStatuses[order.id] = order.kitchen_status || 'served';
+    });
+
+    if (!kitchenPollInitialized) {
+        kitchenStatusTracker = nextStatuses;
+        kitchenPollInitialized = true;
+        return;
+    }
+
+    let playPreparing = false;
+    let playReady = false;
+    let playServed = false;
+
+    Object.keys(nextStatuses).forEach(id => {
+        const prev = kitchenStatusTracker[id];
+        const curr = nextStatuses[id];
+
+        if (curr === 'preparing' && prev !== 'preparing') {
+            playPreparing = true;
+        }
+        if (curr === 'ready' && prev !== 'ready') {
+            playReady = true;
+        }
+        if (curr === 'served' && prev !== 'served') {
+            playServed = true;
+        }
+    });
+
+    kitchenStatusTracker = { ...kitchenStatusTracker, ...nextStatuses };
+
+    if (playPreparing) playCashierPreparingSound();
+    if (playReady) playCashierReadySound();
+    if (playServed) playCashierServedSound();
+}
+
+function renderKitchenReadyOrders(readyOrders) {
+    const container = document.getElementById('kitchen-orders-container');
+    if (!container) return;
+
+    if (readyOrders && readyOrders.length > 0) {
+        let html = '';
+        readyOrders.forEach(order => {
+            html += `
+                <div class="kitchen-order-item mb-2 p-2 border rounded" data-order-id="${order.id}">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div>
+                            <strong class="text-success">${order.invoice_number}</strong>
+                            ${order.table ? `<br><small class="text-muted">Table: ${order.table.number}</small>` : ''}
+                            ${order.table_guest ? `<br><small class="text-muted">Guest: ${order.table_guest.guest_name}</small>` : ''}
+                        </div>
+                        <button class="btn btn-sm btn-success" onclick="addKitchenOrderToCart(${order.id})" title="Add all items to cart">
+                            <i class="fe fe-plus"></i> Add
+                        </button>
+                    </div>
+                    <div class="small text-muted">
+                        ${(order.items || []).slice(0, 3).map(item => `
+                            <div>${item.product_name || item.product?.name || 'Unknown'} × ${item.quantity}</div>
+                        `).join('')}
+                        ${(order.items || []).length > 3 ? `<div>+ ${order.items.length - 3} more</div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } else {
+        container.innerHTML = '<p class="text-center text-muted mb-0">No ready orders from kitchen</p>';
+    }
+}
+
 function refreshKitchenOrders() {
     fetch(`{{ route("admin.kitchen.live") }}`, {
         method: 'GET',
@@ -4466,42 +4795,38 @@ function refreshKitchenOrders() {
     })
     .then(response => response.json())
     .then(data => {
-        const container = document.getElementById('kitchen-orders-container');
-        if (!container) return;
-        
-        if (data.readyOrders && data.readyOrders.length > 0) {
-            let html = '';
-            data.readyOrders.forEach(order => {
-                html += `
-                    <div class="kitchen-order-item mb-2 p-2 border rounded" data-order-id="${order.id}">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <div>
-                                <strong class="text-success">${order.invoice_number}</strong>
-                                ${order.table ? `<br><small class="text-muted">Table: ${order.table.number}</small>` : ''}
-                                ${order.table_guest ? `<br><small class="text-muted">Guest: ${order.table_guest.guest_name}</small>` : ''}
-                            </div>
-                            <button class="btn btn-sm btn-success" onclick="addKitchenOrderToCart(${order.id})" title="Add all items to cart">
-                                <i class="fe fe-plus"></i> Add
-                            </button>
-                        </div>
-                        <div class="small text-muted">
-                            ${order.items.slice(0, 3).map(item => `
-                                <div>${item.product_name || item.product?.name || 'Unknown'} × ${item.quantity}</div>
-                            `).join('')}
-                            ${order.items.length > 3 ? `<div>+ ${order.items.length - 3} more</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = '<p class="text-center text-muted mb-0">No ready orders from kitchen</p>';
-        }
+        detectKitchenStatusSounds(data);
+        renderKitchenReadyOrders(data.readyOrders || []);
     })
     .catch(error => {
         console.error('Error refreshing kitchen orders:', error);
     });
 }
+
+function startKitchenOrderPolling() {
+    if (kitchenRefreshInterval) return;
+    refreshKitchenOrders();
+    kitchenRefreshInterval = setInterval(refreshKitchenOrders, 8000);
+}
+
+function stopKitchenOrderPolling() {
+    if (kitchenRefreshInterval) {
+        clearInterval(kitchenRefreshInterval);
+        kitchenRefreshInterval = null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    startKitchenOrderPolling();
+});
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopKitchenOrderPolling();
+    } else {
+        startKitchenOrderPolling();
+    }
+});
 
 function toggleCustomerCategory() {
     try {

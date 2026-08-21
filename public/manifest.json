@@ -52,12 +52,7 @@
       "url": "/admin/dashboard",
       "icons": [{ "src": "/logo.jpg", "sizes": "96x96" }]
     }
-  ],
-  "share_target": {
-    "action": "/admin/pos",
-    "method": "GET",
-    "enctype": "application/x-www-form-urlencoded"
-  }
+  ]
 }
 
 

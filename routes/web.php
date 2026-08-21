@@ -39,6 +39,12 @@ Route::get('/', function () {
 
 // Dashboard route (redirects to admin dashboard)
 Route::middleware('auth')->get('/dashboard', function () {
+    if (auth()->user()->isKitchen()) {
+        return redirect()->route('admin.kitchen.index');
+    }
+    if (auth()->user()->isReceptionist()) {
+        return redirect()->route('admin.hotel-pos.index');
+    }
     return redirect()->route('admin.dashboard');
 })->name('dashboard');
 
@@ -53,6 +59,8 @@ Route::get('/manifest.json', function () {
 Route::get('/sw.js', function () {
     return response()->file(public_path('sw.js'), [
         'Content-Type' => 'application/javascript',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
     ]);
 });
 
@@ -94,7 +102,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/pos/save-pending', [POSController::class, 'savePending'])->name('pos.save-pending');
     Route::get('/pos/get-pending', [POSController::class, 'getPending'])->name('pos.get-pending');
     Route::post('/pos/clear-pending', [POSController::class, 'clearPending'])->name('pos.clear-pending');
-    Route::delete('/pos/pending/{sale}', [POSController::class, 'deletePending'])->name('pos.delete-pending');
+    Route::post('/pos/pending/{sale}/delete', [POSController::class, 'deletePending'])->name('pos.delete-pending');
+    Route::delete('/pos/pending/{sale}', [POSController::class, 'deletePending']);
     Route::get('/pos/history', [POSController::class, 'history'])->name('pos.history');
 
     // Supervisor Dashboard - Real-time pending orders (must be before /pos/{sale})
@@ -146,6 +155,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Kitchen
     Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
     Route::get('/kitchen/live', [KitchenController::class, 'liveOrders'])->name('kitchen.live');
+    Route::get('/kitchen/report', [KitchenController::class, 'report'])->name('kitchen.report');
     Route::get('/kitchen/print-all', [KitchenController::class, 'printAll'])->name('kitchen.print-all');
     Route::post('/kitchen/{sale}/preparing', [KitchenController::class, 'preparing'])->name('kitchen.preparing');
     Route::post('/kitchen/{sale}/ready', [KitchenController::class, 'ready'])->name('kitchen.ready');
@@ -166,11 +176,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/assignments/{assignment}/end', [StaffAssignmentController::class, 'end'])->name('assignments.end');
 
     // Tables
+    Route::post('/tables/add-guest', [TableController::class, 'addGuest'])->name('tables.add-guest-body');
     Route::resource('tables', TableController::class);
     Route::post('/tables/{table}/occupy', [TableController::class, 'occupy'])->name('tables.occupy');
     Route::post('/tables/{table}/add-guest', [TableController::class, 'addGuest'])->name('tables.add-guest');
     Route::put('/tables/guests/{guest}', [TableController::class, 'updateGuest'])->name('tables.update-guest');
     Route::delete('/tables/guests/{guest}', [TableController::class, 'removeGuest'])->name('tables.remove-guest');
+    Route::post('/tables/guests/{guest}/delete', [TableController::class, 'removeGuest'])->name('tables.delete-guest');
     Route::post('/tables/{table}/release', [TableController::class, 'release'])->name('tables.release');
     Route::get('/tables/{table}/split-bill', [TableController::class, 'splitBill'])->name('tables.split-bill');
     Route::get('/tables/{table}/guests', [TableController::class, 'getGuests'])->name('tables.guests');

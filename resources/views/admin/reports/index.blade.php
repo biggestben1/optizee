@@ -8,6 +8,7 @@
 
 @section('content')
 <div class="row">
+    @if(!auth()->user()->isReceptionist())
     <div class="col-lg-4 col-md-6 mb-4">
         <div class="card">
             <div class="card-body text-center">
@@ -18,6 +19,7 @@
             </div>
         </div>
     </div>
+    @endif
     @if(auth()->user()->canViewFinancialReports())
     <div class="col-lg-4 col-md-6 mb-4">
         <div class="card">
@@ -30,7 +32,7 @@
         </div>
     </div>
     @endif
-    @if(!auth()->user()->isCashier())
+    @if(!auth()->user()->isCashier() && !auth()->user()->isReceptionist())
     @if(auth()->user()->canViewFinancialReports())
     <div class="col-lg-4 col-md-6 mb-4">
         <div class="card">
@@ -73,6 +75,8 @@
             </div>
         </div>
     </div>
+    @endif
+    @if(!auth()->user()->isCashier())
     <div class="col-lg-4 col-md-6 mb-4">
         <div class="card">
             <div class="card-body text-center">
@@ -83,6 +87,7 @@
             </div>
         </div>
     </div>
+    @if(!auth()->user()->isReceptionist())
     <div class="col-lg-4 col-md-6 mb-4">
         <div class="card">
             <div class="card-body text-center">
@@ -94,16 +99,6 @@
         </div>
     </div>
     @endif
+    @endif
 </div>
 @endsection
-
-
-
-
-
-
-
-
-
-
-

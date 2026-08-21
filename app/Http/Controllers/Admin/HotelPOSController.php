@@ -12,7 +12,7 @@ class HotelPOSController extends Controller
 {
     public function __construct()
     {
-        // Allow admins, managers, supervisors, and cashiers to access Hotel POS
+        // Allow admins, managers, supervisors, cashiers, and receptionists to access Hotel POS
         $this->middleware(function ($request, $next) {
             $user = auth()->user();
             
@@ -20,17 +20,10 @@ class HotelPOSController extends Controller
                 return redirect('/login');
             }
             
-            // Allow admins
-            if ($user->is_admin) {
+            if ($user->canAccessHotelPOS()) {
                 return $next($request);
             }
             
-            // Allow cashiers, managers, supervisors
-            if ($user->isCashier() || $user->isManager() || $user->isSupervisor()) {
-                return $next($request);
-            }
-            
-            // Deny access for other roles
             abort(403, 'You do not have permission to access the Hotel POS system.');
         });
     }

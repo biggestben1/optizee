@@ -99,22 +99,34 @@ class RoomCategoryController extends Controller
     public function destroy(RoomCategory $roomCategory)
     {
         try {
-            // Check if category has rooms
-            if ($roomCategory->rooms()->count() > 0) {
-                return back()->with('error', 'Cannot delete category with existing rooms. Please delete or move rooms first.');
-            }
-
             DB::beginTransaction();
+
+            $roomCount = $roomCategory->rooms()->count();
+
+            foreach ($roomCategory->rooms as $room) {
+                $room->subRooms()->update(['parent_suite_id' => null]);
+                $room->bookings()->delete();
+                $room->delete();
+            }
 
             $categoryName = $roomCategory->name;
             $roomCategory->delete();
 
-            AuditLog::log('room_category_deleted', "Room category deleted: {$categoryName}", null);
+            AuditLog::log(
+                'room_category_deleted',
+                "Room category deleted: {$categoryName}" . ($roomCount ? " (including {$roomCount} rooms)" : ''),
+                null
+            );
 
             DB::commit();
 
+            $message = 'Room category deleted successfully!';
+            if ($roomCount > 0) {
+                $message = "Room category deleted, including {$roomCount} room(s).";
+            }
+
             return redirect()->route('admin.room-categories.index')
-                ->with('success', 'Room category deleted successfully!');
+                ->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to delete room category: ' . $e->getMessage());

@@ -19,6 +19,13 @@
     <i class="fe fe-dollar-sign me-2"></i> Receive Payment
 </button>
 @endif
+<form action="{{ route('admin.customers.destroy', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete {{ addslashes($customer->name) }}? This cannot be undone.')">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-danger">
+        <i class="fe fe-trash-2 me-2"></i> Delete
+    </button>
+</form>
 @endsection
 
 @section('content')

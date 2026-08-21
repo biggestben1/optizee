@@ -89,16 +89,14 @@
                                         <a href="{{ route('admin.room-categories.edit', $category) }}" class="btn btn-sm btn-warning" title="Edit Category">
                                             <i class="fe fe-edit"></i>
                                         </a>
-                                        @if($category->rooms_count == 0)
                                         <form action="{{ route('admin.room-categories.destroy', $category) }}" method="POST" class="d-inline"
-                                              onsubmit="return confirm('Are you sure you want to delete {{ $category->name }}?');">
+                                              onsubmit="return confirm(@json($category->rooms_count > 0 ? 'Delete '.$category->name.'? This will also delete '.$category->rooms_count.' room(s) and their bookings.' : 'Are you sure you want to delete '.$category->name.'?'));">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger" title="Delete Category">
                                                 <i class="fe fe-trash-2"></i>
                                             </button>
                                         </form>
-                                        @endif
                                     </div>
                                 </td>
                             </tr>

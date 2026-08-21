@@ -17,6 +17,15 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
+
+        if ($user->isKitchen()) {
+            return redirect()->route('admin.kitchen.index');
+        }
+
+        if ($user->isReceptionist()) {
+            return redirect()->route('admin.hotel-pos.index');
+        }
+
         $isCashier = $user->isCashier();
 
         // For cashiers, only show their own sales

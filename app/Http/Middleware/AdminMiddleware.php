@@ -28,8 +28,41 @@ class AdminMiddleware
             return $next($request);
         }
 
-        // Allow users with roles (manager, supervisor, cashier, storekeeper, kitchen)
+        // Allow users with roles (manager, supervisor, cashier, storekeeper, kitchen, receptionist)
         if ($user->role && $user->is_active) {
+            $routeName = optional($request->route())->getName();
+
+            // Kitchen accounts can only use kitchen pages
+            if ($user->isKitchen()) {
+                $allowed = $routeName && str_starts_with($routeName, 'admin.kitchen.');
+
+                if (!$allowed) {
+                    return redirect()->route('admin.kitchen.index');
+                }
+            }
+
+            // Receptionists can only use Hotel POS, room bookings, and hotel reports
+            if ($user->isReceptionist()) {
+                $allowedPrefixes = [
+                    'admin.hotel-pos.',
+                    'admin.room-bookings.',
+                ];
+                $allowedRoutes = [
+                    'admin.reports.index',
+                    'admin.reports.hotel-bookings',
+                    'admin.reports.export.hotel-bookings',
+                ];
+
+                $allowed = ($routeName && (
+                    collect($allowedPrefixes)->contains(fn ($prefix) => str_starts_with($routeName, $prefix))
+                    || in_array($routeName, $allowedRoutes, true)
+                ));
+
+                if (!$allowed) {
+                    return redirect()->route('admin.hotel-pos.index');
+                }
+            }
+
             return $next($request);
         }
 
@@ -38,4 +71,3 @@ class AdminMiddleware
         ]);
     }
 }
-

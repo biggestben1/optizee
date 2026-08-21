@@ -40,6 +40,18 @@ class ReportController extends Controller
                 }
             }
 
+            // Receptionists can see hotel booking reports
+            if ($user->isReceptionist()) {
+                $allowedRoutes = [
+                    'admin.reports.index',
+                    'admin.reports.hotel-bookings',
+                    'admin.reports.export.hotel-bookings',
+                ];
+                if (in_array($request->route()->getName(), $allowedRoutes, true)) {
+                    return $next($request);
+                }
+            }
+
             abort(403, 'You do not have permission to access this report.');
         });
     }

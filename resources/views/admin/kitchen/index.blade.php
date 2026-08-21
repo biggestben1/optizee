@@ -84,6 +84,82 @@
     .orders-container::-webkit-scrollbar-thumb:hover {
         background: #555;
     }
+    .btn-ready-action {
+        font-weight: 600;
+        min-width: 120px;
+        box-shadow: 0 0 0 0 rgba(94, 114, 228, 0.5);
+        animation: ready-pulse 1.6s ease-out infinite;
+    }
+    @keyframes ready-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(94, 114, 228, 0.45); }
+        70% { box-shadow: 0 0 0 8px rgba(94, 114, 228, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(94, 114, 228, 0); }
+    }
+    .kitchen-status-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 100;
+        background: #fff;
+        border-top: 1px solid #e9ecef;
+        box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+        padding: 10px 12px;
+        margin: 16px -12px -12px;
+    }
+    .kitchen-status-bar .status-filter-btn {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        color: #495057;
+        border-radius: 10px;
+        padding: 10px 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 13px;
+        line-height: 1.2;
+        transition: all 0.15s ease;
+    }
+    .kitchen-status-bar .status-filter-btn .count {
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .kitchen-status-bar .status-filter-btn.active {
+        color: #fff;
+        border-color: transparent;
+    }
+    .kitchen-status-bar .status-filter-btn[data-filter="all"].active {
+        background: #5e72e4;
+    }
+    .kitchen-status-bar .status-filter-btn[data-filter="pending"].active {
+        background: #ffc107;
+        color: #212529;
+    }
+    .kitchen-status-bar .status-filter-btn[data-filter="preparing"].active {
+        background: #17a2b8;
+    }
+    .kitchen-status-bar .status-filter-btn[data-filter="ready"].active {
+        background: #28a745;
+    }
+    .kitchen-status-bar .status-filter-btn[data-filter="served"].active {
+        background: #6c757d;
+    }
+    .stat-card {
+        cursor: pointer;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        transition: transform 0.15s ease;
+    }
+    .kitchen-page-wrap {
+        padding-bottom: 90px;
+    }
+    #ready-section.kitchen-filter-hidden,
+    #pending-section.kitchen-filter-hidden,
+    .order-card.kitchen-filter-hidden {
+        display: none !important;
+    }
 </style>
 @endpush
 
@@ -101,6 +177,7 @@
 
 @section('content')
 
+<div class="kitchen-page-wrap">
 <!-- New Order Alert -->
 <div class="alert alert-info new-order-alert" id="new-order-alert">
     <i class="fe fe-bell me-2 blink"></i> New order received!
@@ -109,25 +186,25 @@
 <!-- Statistics -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card stat-card bg-warning-transparent">
+        <div class="card stat-card bg-warning-transparent" onclick="filterKitchenStatus('pending')" role="button">
             <div class="stat-number text-warning" id="stat-pending">{{ $stats['pending'] }}</div>
             <div class="text-muted">Pending</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card stat-card bg-info-transparent">
+        <div class="card stat-card bg-info-transparent" onclick="filterKitchenStatus('preparing')" role="button">
             <div class="stat-number text-info" id="stat-preparing">{{ $stats['preparing'] }}</div>
             <div class="text-muted">Preparing</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card stat-card bg-success-transparent">
+        <div class="card stat-card bg-success-transparent" onclick="filterKitchenStatus('ready')" role="button">
             <div class="stat-number text-success" id="stat-ready">{{ $stats['ready'] }}</div>
             <div class="text-muted">Ready</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card stat-card bg-secondary-transparent">
+        <div class="card stat-card bg-secondary-transparent" onclick="filterKitchenStatus('served')" role="button">
             <div class="stat-number text-secondary" id="stat-served">{{ $stats['served'] }}</div>
             <div class="text-muted">Served Today</div>
         </div>
@@ -136,12 +213,12 @@
 
 <div class="row">
     <!-- Pending Orders -->
-    <div class="col-lg-8">
+    <div class="col-lg-8" id="pending-section">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0">
                     <i class="fe fe-clock text-warning me-2"></i>
-                    Pending Orders
+                    <span id="active-orders-title">Active Orders</span>
                     <span class="badge bg-warning ms-2" id="pending-count">{{ $pendingOrders->count() }}</span>
                 </h3>
                 <button type="button" class="btn btn-sm btn-success" onclick="printAllPendingOrders()" id="print-pending-btn">
@@ -150,7 +227,7 @@
             </div>
             <div class="card-body orders-container" id="pending-orders-container">
                 @forelse($pendingOrders as $order)
-                <div class="card order-card mb-3 {{ $order->kitchen_status }}" id="order-{{ $order->id }}">
+                <div class="card order-card mb-3 {{ $order->kitchen_status }}" id="order-{{ $order->id }}" data-kitchen-status="{{ $order->kitchen_status }}">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
@@ -170,18 +247,28 @@
                                     @endif
                                 </div>
                             </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success" onclick="printSingleOrder({{ $order->id }})" title="Print Order">
+                            <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                <button class="btn btn-sm btn-outline-success" onclick="printSingleOrder({{ $order->id }})" title="Print Order">
                                     <i class="fe fe-printer"></i> Print
                                 </button>
-                                @if($order->kitchen_status === 'pending')
-                                <button class="btn btn-sm btn-info" onclick="markPreparing({{ $order->id }})" title="Start Preparing">
-                                    <i class="fe fe-play"></i> Start
-                                </button>
+                                @if(auth()->user()->canControlKitchenOrders())
+                                    @if($order->kitchen_status === 'pending')
+                                    <button class="btn btn-sm btn-info" onclick="markPreparing({{ $order->id }})" title="Start Preparing">
+                                        <i class="fe fe-play"></i> Start
+                                    </button>
+                                    @endif
+                                    @if($order->kitchen_status === 'preparing')
+                                    <button class="btn btn-sm btn-primary btn-ready-action" onclick="markReady({{ $order->id }})" title="Mark Ready">
+                                        <i class="fe fe-check"></i> Mark Ready
+                                    </button>
+                                    @else
+                                    <button class="btn btn-sm btn-outline-primary" onclick="markReady({{ $order->id }})" title="Mark Ready">
+                                        <i class="fe fe-check"></i> Ready
+                                    </button>
+                                    @endif
+                                @elseif($order->kitchen_status === 'preparing')
+                                    <span class="badge bg-info align-self-center">Kitchen preparing…</span>
                                 @endif
-                                <button class="btn btn-sm btn-primary" onclick="markReady({{ $order->id }})" title="Mark Ready">
-                                    <i class="fe fe-check"></i> Ready
-                                </button>
                             </div>
                         </div>
                         
@@ -219,7 +306,7 @@
     </div>
 
     <!-- Ready Orders -->
-    <div class="col-lg-4">
+    <div class="col-lg-4" id="ready-section">
         <div class="card">
             <div class="card-header bg-success-transparent">
                 <h3 class="card-title mb-0 text-success">
@@ -230,7 +317,7 @@
             </div>
             <div class="card-body orders-container" id="ready-orders-container">
                 @forelse($readyOrders as $order)
-                <div class="card order-card ready mb-3" id="ready-order-{{ $order->id }}">
+                <div class="card order-card ready mb-3" id="ready-order-{{ $order->id }}" data-kitchen-status="ready">
                     <div class="card-body py-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -258,12 +345,179 @@
     </div>
 </div>
 
+<!-- Bottom status filter links -->
+<div class="kitchen-status-bar">
+    <div class="d-flex gap-2">
+        <button type="button" class="status-filter-btn active" data-filter="all" onclick="filterKitchenStatus('all')">
+            <span class="count" id="filter-count-all">{{ $stats['pending'] + $stats['preparing'] + $stats['ready'] }}</span>
+            All
+        </button>
+        <button type="button" class="status-filter-btn" data-filter="pending" onclick="filterKitchenStatus('pending')">
+            <span class="count" id="filter-count-pending">{{ $stats['pending'] }}</span>
+            Pending
+        </button>
+        <button type="button" class="status-filter-btn" data-filter="preparing" onclick="filterKitchenStatus('preparing')">
+            <span class="count" id="filter-count-preparing">{{ $stats['preparing'] }}</span>
+            Preparing
+        </button>
+        <button type="button" class="status-filter-btn" data-filter="ready" onclick="filterKitchenStatus('ready')">
+            <span class="count" id="filter-count-ready">{{ $stats['ready'] }}</span>
+            Ready
+        </button>
+        <button type="button" class="status-filter-btn" data-filter="served" onclick="filterKitchenStatus('served')">
+            <span class="count" id="filter-count-served">{{ $stats['served'] }}</span>
+            Served
+        </button>
+    </div>
+</div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
-let lastOrderCount = {{ $pendingOrders->count() }};
+let knownPendingOrderIds = @json($pendingOrders->where('kitchen_status', 'pending')->pluck('id')->values());
 let refreshInterval;
+const canControlKitchenOrders = @json(auth()->user()->canControlKitchenOrders());
+let kitchenStatusFilter = 'all';
+const kitchenReportUrl = @json(\Illuminate\Support\Facades\Route::has('admin.kitchen.report') ? route('admin.kitchen.report') : null);
+
+const kitchenSoundUrl = '{{ asset('sounds/kitchen-new.wav') }}';
+let kitchenAudioCtx = null;
+const kitchenDecodedBuffers = {};
+
+function getKitchenAudioContext() {
+    if (!kitchenAudioCtx) {
+        kitchenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (kitchenAudioCtx.state === 'suspended') {
+        kitchenAudioCtx.resume();
+    }
+    return kitchenAudioCtx;
+}
+
+async function loadKitchenSoundBuffer(url) {
+    if (kitchenDecodedBuffers[url]) return kitchenDecodedBuffers[url];
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = await getKitchenAudioContext().decodeAudioData(arrayBuffer);
+    kitchenDecodedBuffers[url] = buffer;
+    return buffer;
+}
+
+async function playLoudSound(url, gainValue = 3.0) {
+    try {
+        const ctx = getKitchenAudioContext();
+        const buffer = await loadKitchenSoundBuffer(url);
+        const source = ctx.createBufferSource();
+        const gainNode = ctx.createGain();
+        source.buffer = buffer;
+        gainNode.gain.value = gainValue;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+    } catch (e) {
+        // Fallback to plain Audio if WebAudio fails
+        try {
+            const audio = new Audio(url);
+            audio.volume = 1.0;
+            await audio.play();
+        } catch (err) {
+            console.warn('Kitchen sound failed:', err);
+        }
+    }
+}
+
+function playNotificationSound() {
+    playLoudSound(kitchenSoundUrl, 4.5);
+}
+
+// Unlock audio after first click (browser autoplay policy)
+document.addEventListener('click', function unlockKitchenAudio() {
+    getKitchenAudioContext();
+    loadKitchenSoundBuffer(kitchenSoundUrl).catch(() => {});
+    document.removeEventListener('click', unlockKitchenAudio);
+}, { once: true });
+
+function filterKitchenStatus(status, options = {}) {
+    const silent = !!options.silent;
+    kitchenStatusFilter = status || 'all';
+
+    document.querySelectorAll('.kitchen-status-bar .status-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === kitchenStatusFilter);
+    });
+
+    const pendingSection = document.getElementById('pending-section');
+    const readySection = document.getElementById('ready-section');
+    const titleEl = document.getElementById('active-orders-title');
+
+    // Served is report-only on this page
+    if (kitchenStatusFilter === 'served') {
+        if (kitchenReportUrl) {
+            window.location.href = kitchenReportUrl;
+            return;
+        }
+        kitchenStatusFilter = 'all';
+    }
+
+    const showPending = kitchenStatusFilter === 'all' || kitchenStatusFilter === 'pending' || kitchenStatusFilter === 'preparing';
+    const showReady = kitchenStatusFilter === 'all' || kitchenStatusFilter === 'ready';
+
+    if (pendingSection) pendingSection.classList.toggle('kitchen-filter-hidden', !showPending);
+    if (readySection) readySection.classList.toggle('kitchen-filter-hidden', !showReady);
+
+    // Adjust column width when only one section is visible
+    if (pendingSection) {
+        pendingSection.classList.toggle('col-lg-8', showReady && showPending);
+        pendingSection.classList.toggle('col-lg-12', showPending && !showReady);
+    }
+    if (readySection) {
+        readySection.classList.toggle('col-lg-4', showReady && showPending);
+        readySection.classList.toggle('col-lg-12', showReady && !showPending);
+    }
+
+    document.querySelectorAll('#pending-orders-container .order-card').forEach(card => {
+        const cardStatus = card.dataset.kitchenStatus || '';
+        if (kitchenStatusFilter === 'pending' || kitchenStatusFilter === 'preparing') {
+            card.classList.toggle('kitchen-filter-hidden', cardStatus !== kitchenStatusFilter);
+        } else {
+            card.classList.remove('kitchen-filter-hidden');
+        }
+    });
+
+    if (titleEl) {
+        if (kitchenStatusFilter === 'pending') titleEl.textContent = 'Pending Orders';
+        else if (kitchenStatusFilter === 'preparing') titleEl.textContent = 'Preparing Orders';
+        else titleEl.textContent = 'Active Orders';
+    }
+
+    if (!silent) {
+        const target = kitchenStatusFilter === 'ready'
+            ? document.getElementById('ready-section')
+            : document.getElementById('pending-section');
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+}
+
+function updateFilterCounts(stats) {
+    const pending = Number(stats.pending || 0);
+    const preparing = Number(stats.preparing || 0);
+    const ready = Number(stats.ready || 0);
+    const served = Number(stats.served || 0);
+
+    const setCount = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setCount('filter-count-all', pending + preparing + ready);
+    setCount('filter-count-pending', pending);
+    setCount('filter-count-preparing', preparing);
+    setCount('filter-count-ready', ready);
+    setCount('filter-count-served', served);
+}
 
 // Start auto-refresh
 function startAutoRefresh() {
@@ -280,12 +534,16 @@ function refreshOrders() {
     fetch('{{ route("admin.kitchen.live") }}')
         .then(response => response.json())
         .then(data => {
-            // Check for new orders
-            if (data.pendingOrders.length > lastOrderCount) {
+            const currentPendingIds = (data.pendingOrders || [])
+                .filter(order => order.kitchen_status === 'pending')
+                .map(order => order.id);
+
+            const hasNewOrder = currentPendingIds.some(id => !knownPendingOrderIds.includes(id));
+            if (hasNewOrder) {
                 showNewOrderAlert();
                 playNotificationSound();
             }
-            lastOrderCount = data.pendingOrders.length;
+            knownPendingOrderIds = currentPendingIds;
 
             // Update stats
             document.getElementById('stat-pending').textContent = data.stats.pending;
@@ -294,12 +552,16 @@ function refreshOrders() {
             document.getElementById('stat-served').textContent = data.stats.served;
             document.getElementById('pending-count').textContent = data.pendingOrders.length;
             document.getElementById('ready-count').textContent = data.readyOrders.length;
+            updateFilterCounts(data.stats);
 
             // Update pending orders
             updatePendingOrders(data.pendingOrders);
             
             // Update ready orders
             updateReadyOrders(data.readyOrders);
+
+            // Re-apply current filter after live refresh
+            filterKitchenStatus(kitchenStatusFilter, { silent: true });
         })
         .catch(error => console.error('Error refreshing orders:', error));
 }
@@ -329,11 +591,24 @@ function updatePendingOrders(orders) {
             ? '<span class="badge bg-info ms-2">Preparing</span>'
             : '<span class="badge bg-warning ms-2">New</span>';
         
-        const startBtn = order.kitchen_status === 'pending'
+        const startBtn = (canControlKitchenOrders && order.kitchen_status === 'pending')
             ? `<button class="btn btn-sm btn-info" onclick="markPreparing(${order.id})" title="Start Preparing">
                     <i class="fe fe-play"></i> Start
                </button>`
             : '';
+
+        let readyBtn = '';
+        if (canControlKitchenOrders) {
+            readyBtn = order.kitchen_status === 'preparing'
+                ? `<button class="btn btn-sm btn-primary btn-ready-action" onclick="markReady(${order.id})" title="Mark Ready">
+                        <i class="fe fe-check"></i> Mark Ready
+                   </button>`
+                : `<button class="btn btn-sm btn-outline-primary" onclick="markReady(${order.id})" title="Mark Ready">
+                        <i class="fe fe-check"></i> Ready
+                   </button>`;
+        } else if (order.kitchen_status === 'preparing') {
+            readyBtn = `<span class="badge bg-info align-self-center">Kitchen preparing…</span>`;
+        }
 
         let itemsHtml = '';
         order.items.forEach(item => {
@@ -362,7 +637,7 @@ function updatePendingOrders(orders) {
             : '';
 
         html += `
-            <div class="card order-card mb-3 ${order.kitchen_status}" id="order-${order.id}">
+            <div class="card order-card mb-3 ${order.kitchen_status}" id="order-${order.id}" data-kitchen-status="${order.kitchen_status}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
@@ -376,14 +651,12 @@ function updatePendingOrders(orders) {
                                 ${customerInfo}
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-success" onclick="printSingleOrder(${order.id})" title="Print Order">
+                        <div class="d-flex gap-2 flex-wrap justify-content-end">
+                            <button class="btn btn-sm btn-outline-success" onclick="printSingleOrder(${order.id})" title="Print Order">
                                 <i class="fe fe-printer"></i> Print
                             </button>
                             ${startBtn}
-                            <button class="btn btn-sm btn-primary" onclick="markReady(${order.id})" title="Mark Ready">
-                                <i class="fe fe-check"></i> Ready
-                            </button>
+                            ${readyBtn}
                         </div>
                     </div>
                     
@@ -418,7 +691,7 @@ function updateReadyOrders(orders) {
             : '';
 
         html += `
-            <div class="card order-card ready mb-3" id="ready-order-${order.id}">
+            <div class="card order-card ready mb-3" id="ready-order-${order.id}" data-kitchen-status="ready">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -457,23 +730,6 @@ function showNewOrderAlert() {
     setTimeout(() => {
         alert.style.display = 'none';
     }, 5000);
-}
-
-function playNotificationSound() {
-    // Create a simple beep sound
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    gainNode.gain.value = 0.3;
-    
-    oscillator.start();
-    setTimeout(() => oscillator.stop(), 200);
 }
 
 function markPreparing(orderId) {

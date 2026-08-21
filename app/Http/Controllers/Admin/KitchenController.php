@@ -129,6 +129,15 @@ class KitchenController extends Controller
                 ->get();
             
             $readyOrders = $this->filterFoodItems($readyOrders, $foodCategoryIds);
+
+            $servedOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy'])
+                ->where('kitchen_status', 'served')
+                ->where('prepared_by', $user->id)
+                ->today()
+                ->orderByDesc('updated_at')
+                ->take(20)
+                ->get();
+            $servedOrders = $this->filterFoodItems($servedOrders, $foodCategoryIds);
             
             // Stats for this kitchen user only (include both completed and pending sales)
             $stats = [
@@ -146,19 +155,11 @@ class KitchenController extends Controller
                 'served' => Sale::today()->where('kitchen_status', 'served')->where('prepared_by', $user->id)->count(),
             ];
         } else {
-            // Managers/supervisors see all orders (including pending status sales)
+            // Managers/supervisors see all pending + preparing tickets
+            // (sale status can be completed OR pending/cart)
             $pendingOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer'])
-                ->where(function($q) {
-                    $q->where(function($q2) {
-                        // Completed sales with pending/preparing kitchen status
-                        $q2->where('status', 'completed')
-                           ->whereIn('kitchen_status', ['pending', 'preparing']);
-                    })->orWhere(function($q2) {
-                        // Pending sales (cart items) with kitchen_status = 'pending'
-                        $q2->where('status', 'pending')
-                           ->where('kitchen_status', 'pending');
-                    });
-                })
+                ->whereIn('status', ['completed', 'pending'])
+                ->whereIn('kitchen_status', ['pending', 'preparing'])
                 ->today()
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -198,6 +199,10 @@ class KitchenController extends Controller
      */
     public function preparing(Sale $sale)
     {
+        if (!auth()->user()->canControlKitchenOrders()) {
+            return response()->json(['error' => 'Only kitchen staff can start preparing orders.'], 403);
+        }
+
         // Allow both completed and pending orders to be prepared
         if (!in_array($sale->status, ['completed', 'pending'])) {
             return response()->json(['error' => 'Invalid order status.'], 422);
@@ -219,6 +224,10 @@ class KitchenController extends Controller
      */
     public function ready(Sale $sale)
     {
+        if (!auth()->user()->canControlKitchenOrders()) {
+            return response()->json(['error' => 'Only kitchen staff can mark orders as ready.'], 403);
+        }
+
         // Allow both completed and pending orders to be marked as ready
         if (!in_array($sale->status, ['completed', 'pending'])) {
             return response()->json(['error' => 'Invalid order status.'], 422);
@@ -322,7 +331,7 @@ class KitchenController extends Controller
         // If kitchen user, show only their orders
         if ($isKitchenUser) {
             // Pending orders: show all (including pending status sales with kitchen_status = 'pending')
-            $pendingOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer'])
+            $pendingOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'table', 'tableGuest'])
                 ->where(function($q) {
                     $q->where(function($q2) {
                         // Completed sales with pending kitchen status
@@ -339,7 +348,7 @@ class KitchenController extends Controller
                 ->get();
             
             // Preparing orders: show only ones this kitchen user is preparing
-            $preparingOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer'])
+            $preparingOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'table', 'tableGuest'])
                 ->where(function($q) {
                     $q->where('status', 'completed')
                       ->orWhere('status', 'pending');
@@ -358,7 +367,7 @@ class KitchenController extends Controller
             $pendingOrders = $pendingOrders->merge($preparingOrders)->sortByDesc('created_at');
             
             // Ready orders: show only ones this kitchen user prepared
-            $readyOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy'])
+            $readyOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy', 'table', 'tableGuest'])
                 ->kitchenReady()
                 ->where('prepared_by', $user->id)
                 ->today()
@@ -383,29 +392,30 @@ class KitchenController extends Controller
                 'ready' => Sale::today()->where('kitchen_status', 'ready')->where('prepared_by', $user->id)->count(),
                 'served' => Sale::today()->where('kitchen_status', 'served')->where('prepared_by', $user->id)->count(),
             ];
+
+            $servedOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy', 'table', 'tableGuest'])
+                ->where('kitchen_status', 'served')
+                ->where('prepared_by', $user->id)
+                ->today()
+                ->orderByDesc('updated_at')
+                ->take(20)
+                ->get();
+            $servedOrders = $this->filterFoodItems($servedOrders, $foodCategoryIds);
         } else {
-            // Managers/supervisors see all orders (including pending status sales)
-            $pendingOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer'])
-                ->where(function($q) {
-                    $q->where(function($q2) {
-                        // Completed sales with pending/preparing kitchen status
-                        $q2->where('status', 'completed')
-                           ->whereIn('kitchen_status', ['pending', 'preparing']);
-                    })->orWhere(function($q2) {
-                        // Pending sales (cart items) with kitchen_status = 'pending'
-                        $q2->where('status', 'pending')
-                           ->where('kitchen_status', 'pending');
-                    });
-                })
+            // Managers/supervisors see all pending + preparing tickets
+            // (sale status can be completed OR pending/cart)
+            $pendingOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'table', 'tableGuest'])
+                ->whereIn('status', ['completed', 'pending'])
+                ->whereIn('kitchen_status', ['pending', 'preparing'])
                 ->today()
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            $readyOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy'])
+            $readyOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy', 'table', 'tableGuest'])
                 ->kitchenReady()
                 ->today()
                 ->orderBy('kitchen_ready_at', 'desc')
-                ->take(10)
+                ->take(20)
                 ->get();
             
             // Filter to only show food items
@@ -426,57 +436,91 @@ class KitchenController extends Controller
                 'ready' => Sale::today()->where('kitchen_status', 'ready')->count(),
                 'served' => Sale::today()->where('kitchen_status', 'served')->count(),
             ];
+
+            $servedOrders = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy', 'table', 'tableGuest'])
+                ->where('kitchen_status', 'served')
+                ->today()
+                ->orderByDesc('updated_at')
+                ->take(20)
+                ->get();
+            $servedOrders = $this->filterFoodItems($servedOrders, $foodCategoryIds);
         }
 
+        $mapOrder = function ($sale) {
+            return [
+                'id' => $sale->id,
+                'invoice_number' => $sale->invoice_number,
+                'created_at' => $sale->created_at->toDateTimeString(),
+                'kitchen_ready_at' => $sale->kitchen_ready_at ? $sale->kitchen_ready_at->toDateTimeString() : null,
+                'kitchen_status' => $sale->kitchen_status,
+                'notes' => $sale->notes,
+                'customer' => $sale->customer ? ['name' => $sale->customer->name] : null,
+                'user' => $sale->user ? ['name' => $sale->user->name] : null,
+                'preparedBy' => $sale->preparedBy ? ['name' => $sale->preparedBy->name] : null,
+                'table' => $sale->table ? [
+                    'number' => $sale->table->number ?? $sale->table->name ?? $sale->table->table_number ?? null,
+                ] : null,
+                'table_guest' => $sale->tableGuest ? ['guest_name' => $sale->tableGuest->guest_name] : null,
+                'items' => $sale->items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'product_name' => $item->product_name,
+                        'quantity' => $item->quantity,
+                        'unit_price' => $item->unit_price ?? null,
+                        'product' => $item->product ? [
+                            'id' => $item->product->id,
+                            'preparation_time' => $item->product->preparation_time,
+                        ] : null,
+                    ];
+                }),
+            ];
+        };
+
         return response()->json([
-            'pendingOrders' => $pendingOrders->map(function($sale) {
-                return [
-                    'id' => $sale->id,
-                    'invoice_number' => $sale->invoice_number,
-                    'created_at' => $sale->created_at->toDateTimeString(),
-                    'kitchen_status' => $sale->kitchen_status,
-                    'notes' => $sale->notes,
-                    'customer' => $sale->customer ? ['name' => $sale->customer->name] : null,
-                    'user' => $sale->user ? ['name' => $sale->user->name] : null,
-                    'items' => $sale->items->map(function($item) {
-                        return [
-                            'id' => $item->id,
-                            'product_name' => $item->product_name,
-                            'quantity' => $item->quantity,
-                            'product' => $item->product ? [
-                                'id' => $item->product->id,
-                                'preparation_time' => $item->product->preparation_time,
-                            ] : null,
-                        ];
-                    }),
-                ];
-            })->values(),
-            'readyOrders' => $readyOrders->map(function($sale) {
-                return [
-                    'id' => $sale->id,
-                    'invoice_number' => $sale->invoice_number,
-                    'created_at' => $sale->created_at->toDateTimeString(),
-                    'kitchen_ready_at' => $sale->kitchen_ready_at ? $sale->kitchen_ready_at->toDateTimeString() : null,
-                    'kitchen_status' => $sale->kitchen_status,
-                    'notes' => $sale->notes,
-                    'customer' => $sale->customer ? ['name' => $sale->customer->name] : null,
-                    'user' => $sale->user ? ['name' => $sale->user->name] : null,
-                    'preparedBy' => $sale->preparedBy ? ['name' => $sale->preparedBy->name] : null,
-                    'items' => $sale->items->map(function($item) {
-                        return [
-                            'id' => $item->id,
-                            'product_name' => $item->product_name,
-                            'quantity' => $item->quantity,
-                            'product' => $item->product ? [
-                                'id' => $item->product->id,
-                                'preparation_time' => $item->product->preparation_time,
-                            ] : null,
-                        ];
-                    }),
-                ];
-            })->values(),
+            'pendingOrders' => $pendingOrders->map($mapOrder)->values(),
+            'readyOrders' => $readyOrders->map($mapOrder)->values(),
+            'servedOrders' => $servedOrders->map($mapOrder)->values(),
             'stats' => $stats,
         ]);
+    }
+
+    /**
+     * Kitchen report for kitchen staff and managers
+     */
+    public function report(Request $request)
+    {
+        $user = auth()->user();
+        $isKitchenUser = $user->isKitchen();
+        $foodCategoryIds = $this->getFoodCategoryIds();
+        $date = $request->filled('date')
+            ? \Carbon\Carbon::parse($request->date)->startOfDay()
+            : now()->startOfDay();
+
+        $query = Sale::with(['items.product:id,preparation_time,category_id', 'user', 'customer', 'preparedBy'])
+            ->whereIn('status', ['completed', 'pending'])
+            ->whereNotNull('kitchen_status')
+            ->whereDate('created_at', $date)
+            ->orderBy('created_at', 'desc');
+
+        if ($isKitchenUser) {
+            $query->where(function ($q) use ($user) {
+                $q->where('kitchen_status', 'pending')
+                  ->orWhere('prepared_by', $user->id);
+            });
+        }
+
+        $orders = $this->filterFoodItems($query->get(), $foodCategoryIds);
+
+        $stats = [
+            'pending' => $orders->where('kitchen_status', 'pending')->count(),
+            'preparing' => $orders->where('kitchen_status', 'preparing')->count(),
+            'ready' => $orders->where('kitchen_status', 'ready')->count(),
+            'served' => $orders->where('kitchen_status', 'served')->count(),
+            'total' => $orders->count(),
+            'items' => $orders->sum(fn ($order) => $order->items->sum('quantity')),
+        ];
+
+        return view('admin.kitchen.report', compact('orders', 'stats', 'date', 'isKitchenUser'));
     }
 }
 

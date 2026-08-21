@@ -61,6 +61,12 @@ class TableGuest extends Model
 
     public function leave(): void
     {
+        $pendingSales = $this->sales()->where('status', 'pending')->get();
+        foreach ($pendingSales as $sale) {
+            $sale->items()->delete();
+            $sale->delete();
+        }
+
         $this->update([
             'is_active' => false,
             'left_at' => now(),

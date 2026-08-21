@@ -96,6 +96,13 @@
                                     <a href="{{ route('admin.customers.edit', $customer) }}" class="btn btn-sm btn-primary">
                                         <i class="fe fe-edit"></i>
                                     </a>
+                                    <form action="{{ route('admin.customers.destroy', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete {{ addslashes($customer->name) }}? This cannot be undone.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="fe fe-trash-2"></i>
+                                        </button>
+                                    </form>
                                     @if($customer->credit_balance > 0)
                                     <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal{{ $customer->id }}">
                                         <i class="fe fe-dollar-sign"></i>
