@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BankSettingsController;
 use App\Http\Controllers\Admin\CloudFooterController;
+use App\Http\Controllers\Admin\GoLiveController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -230,6 +231,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Bank Settings
     Route::get('/bank-settings', [BankSettingsController::class, 'edit'])->name('bank-settings.edit');
     Route::put('/bank-settings', [BankSettingsController::class, 'update'])->name('bank-settings.update');
+
+    // Go Live (admin only — controller enforces)
+    Route::get('/go-live', [GoLiveController::class, 'index'])->name('go-live.index');
+    Route::post('/go-live/clear-orders', [GoLiveController::class, 'clearOrders'])->name('go-live.clear-orders');
+    Route::post('/go-live/clear-customers', [GoLiveController::class, 'clearCustomers'])->name('go-live.clear-customers');
+    Route::post('/go-live/clear-all', [GoLiveController::class, 'clearAll'])->name('go-live.clear-all');
 
     // Cloud Footer
     Route::get('/cloud-footer', [CloudFooterController::class, 'edit'])->name('cloud-footer.edit');

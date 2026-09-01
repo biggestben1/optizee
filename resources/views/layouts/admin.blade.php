@@ -335,6 +335,14 @@
                                 </a>
                             </li>
                             @endif
+                            @if(auth()->user()->is_admin)
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.go-live.*') ? 'active' : '' }}" href="{{ route('admin.go-live.index') }}">
+                                    <i class="side-menu__icon fe fe-zap"></i>
+                                    <span class="side-menu__label">Ready to Go Live</span>
+                                </a>
+                            </li>
+                            @endif
 
                             @if((auth()->user()->is_admin || auth()->user()->isManager() || auth()->user()->isSupervisor()) && !auth()->user()->isCashier())
                             <li class="sub-category">

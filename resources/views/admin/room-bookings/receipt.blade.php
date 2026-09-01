@@ -182,12 +182,19 @@
                 <div class="text-center mt-4 pt-3 border-top">
                     <p class="mb-3"><strong>Thank you for choosing Optizee Hotel and Suites!</strong></p>
                     
+                    @php
+                        $bankName = \App\Models\Setting::getValue('bank.name', '');
+                        $accountName = \App\Models\Setting::getValue('bank.account_name', '');
+                        $accountNumber = \App\Models\Setting::getValue('bank.account_number', '');
+                    @endphp
+                    @if($bankName || $accountName || $accountNumber)
                     <div class="mt-4 pt-3 border-top">
                         <p class="mb-2"><strong>Bank Transfer Details:</strong></p>
-                        <p class="mb-1"><strong>Bank:</strong> MONIEPOINT</p>
-                        <p class="mb-1"><strong>Account Number:</strong> 5686138899</p>
-                        <p class="mb-0"><strong>Account Name:</strong> SUNNY AKHAMIORKHOR</p>
+                        @if($bankName)<p class="mb-1"><strong>Bank:</strong> {{ $bankName }}</p>@endif
+                        @if($accountNumber)<p class="mb-1"><strong>Account Number:</strong> {{ $accountNumber }}</p>@endif
+                        @if($accountName)<p class="mb-0"><strong>Account Name:</strong> {{ $accountName }}</p>@endif
                     </div>
+                    @endif
                 </div>
             </div>
             <div class="card-footer">

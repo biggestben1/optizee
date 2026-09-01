@@ -217,9 +217,25 @@
         padding: 12px 16px 16px;
     }
     .table-guest-modal .modal-body,
-    .checkout-modal .modal-body {
+    .checkout-modal .modal-body,
+    #receiptModal .modal-body {
         max-height: calc(100vh - 180px);
         overflow-y: auto;
+    }
+    #receiptModal .receipt-items-table th,
+    #receiptModal .receipt-items-table td {
+        color: #000;
+    }
+    #receiptModal .receipt-item-name,
+    #receiptModal .receipt-item-qty,
+    #receiptModal .receipt-item-total {
+        font-weight: 700;
+        color: #000;
+    }
+    #receiptModal .receipt-meta,
+    #receiptModal .receipt-footer p {
+        color: #212529;
+        font-weight: 600;
     }
     #quickCreateTableModal {
         z-index: 1065;
@@ -858,7 +874,7 @@
 
 <!-- Receipt Modal -->
 <div class="modal fade" id="receiptModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Sale Complete</h5>
@@ -950,10 +966,57 @@
 
 @push('scripts')
 <script>
+@php
+    $receiptLogoPath = public_path('logo.jpg');
+    if (!file_exists($receiptLogoPath)) {
+        $receiptLogoPath = public_path('logo.png');
+    }
+    $receiptLogoSrc = asset('logo.jpg');
+    if (file_exists($receiptLogoPath)) {
+        $mime = str_ends_with(strtolower($receiptLogoPath), '.png') ? 'image/png' : 'image/jpeg';
+        $receiptLogoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($receiptLogoPath));
+    }
+@endphp
+const RECEIPT_LOGO_SRC = @json($receiptLogoSrc);
+const RECEIPT_BRAND_NAME = @json(config('app.name', 'Optizee Hotel and Suites'));
+const BANK_NAME = @json(\App\Models\Setting::getValue('bank.name', ''));
+const BANK_ACCOUNT_NAME = @json(\App\Models\Setting::getValue('bank.account_name', ''));
+const BANK_ACCOUNT_NUMBER = @json(\App\Models\Setting::getValue('bank.account_number', ''));
+
 let cart = [];
 let currentGuestId = null; // Track currently selected guest ID
 let guestData = {}; // Store guest data including customer_id
 let activeGuestOrders = {}; // Store multiple guest orders: {guestId: {cart: [], guestName: '', tableId: '', customerId: null}}
+
+function receiptLogoHtml() {
+    return `<div class="logo" style="text-align:center;margin-bottom:15px;">
+        <img src="${RECEIPT_LOGO_SRC}" alt="${RECEIPT_BRAND_NAME}" style="max-width:150px;max-height:80px;height:auto;display:block;margin:0 auto 10px;">
+    </div>`;
+}
+
+function bankTransferDetailsHtml(options = {}) {
+    const {
+        wrapperStyle = 'text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;',
+        lineClass = '',
+        titleMargin = 'margin-bottom: 5px;',
+    } = options;
+
+    if (!BANK_NAME && !BANK_ACCOUNT_NAME && !BANK_ACCOUNT_NUMBER) {
+        return '';
+    }
+
+    const lineMb = lineClass || 'style="margin-bottom: 2px;"';
+    const lastMb = lineClass ? lineClass : 'style="margin-bottom: 0;"';
+
+    return `
+        <div style="${wrapperStyle}">
+            <p style="${titleMargin}"><strong>Bank Transfer Details:</strong></p>
+            ${BANK_NAME ? `<p ${lineMb}><strong>Bank:</strong> ${BANK_NAME}</p>` : ''}
+            ${BANK_ACCOUNT_NUMBER ? `<p ${lineMb}><strong>Account Number:</strong> ${BANK_ACCOUNT_NUMBER}</p>` : ''}
+            ${BANK_ACCOUNT_NAME ? `<p ${lastMb}><strong>Account Name:</strong> ${BANK_ACCOUNT_NAME}</p>` : ''}
+        </div>
+    `;
+}
 
 function printHtmlInNewWindow(html) {
     const printWindow = window.open('', '_blank');
@@ -1534,17 +1597,19 @@ function printPendingOrderReceipt(sale, items) {
         <head>
             <title>Pending Order - ${sale.invoice_number}</title>
             <style>
-                body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+                body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
                 .header img { max-width: 150px; max-height: 80px; height: auto; margin-bottom: 15px; }
                 .info { margin: 10px 0; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-                th { background-color: #f2f2f2; }
-                .total { font-size: 18px; font-weight: bold; color: #5e72e4; }
-                .pending-badge { background: #ffc107; color: #000; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 10px 0; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; color: #000; }
+                th, td { padding: 8px; text-align: left; border-bottom: 1px solid #000; color: #000 !important; font-weight: 700; }
+                th { background-color: #fff; font-weight: 800; text-transform: uppercase; }
+                .total { font-size: 18px; font-weight: 800; color: #000; }
+                .pending-badge { background: #ffc107; color: #000; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 10px 0; font-weight: 700; }
                 .text-right { text-align: right; }
-                @media print { body { margin: 0; padding: 10px; } }
+                p { color: #000; font-weight: 600; }
+                strong { color: #000; font-weight: 800; }
+                @media print { body { margin: 0; padding: 10px; color: #000; } th, td, p, strong { color: #000 !important; } }
             </style>
         </head>
         <body>
@@ -1588,12 +1653,7 @@ function printPendingOrderReceipt(sale, items) {
                 <p><strong>This is a pending order.</strong></p>
                 <p>Payment not yet received.</p>
             </div>
-            <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
-                <p style="margin-bottom: 5px;"><strong>Bank Transfer Details:</strong></p>
-                <p style="margin-bottom: 2px;"><strong>Bank:</strong> MONIEPOINT</p>
-                <p style="margin-bottom: 2px;"><strong>Account Number:</strong> 5686138899</p>
-                <p style="margin-bottom: 0;"><strong>Account Name:</strong> SUNNY AKHAMIORKHOR</p>
-            </div>
+            ${bankTransferDetailsHtml()}
         </body>
         </html>
     `);
@@ -3638,52 +3698,45 @@ function checkout() {
 // Store current sale data for close order functionality
 let currentSaleData = null;
 
-function showReceipt(sale) {
-    currentSaleData = sale;
-    
-    const bankName = @json(\App\Models\Setting::getValue('bank.name', ''));
-    const accountName = @json(\App\Models\Setting::getValue('bank.account_name', ''));
-    const accountNumber = @json(\App\Models\Setting::getValue('bank.account_number', ''));
-    
-    let itemsHtml = sale.items.map(item => `
+function buildReceiptBodyHtml(sale) {
+    const itemsHtml = sale.items.map(item => `
         <tr>
-            <td>${item.product_name}</td>
-            <td class="text-center">${item.quantity}</td>
-            <td class="text-end">₦${parseFloat(item.total).toFixed(2)}</td>
+            <td class="receipt-item-name">${item.product_name}</td>
+            <td class="text-center receipt-item-qty">${item.quantity}</td>
+            <td class="text-end receipt-item-total">₦${parseFloat(item.total).toFixed(2)}</td>
         </tr>
     `).join('');
-    
-    // Get table and guest info if available
-    const tableId = document.getElementById('table-select').value;
-    const guestId = document.getElementById('guest-select').value;
+
+    const tableId = document.getElementById('table-select')?.value;
+    const guestId = document.getElementById('guest-select')?.value;
     let tableInfo = '';
     let guestInfo = '';
-    
+
     if (tableId) {
         const tableOption = document.querySelector(`#table-select option[value="${tableId}"]`);
         if (tableOption) {
             const tableName = tableOption.textContent.split(' - ')[0];
-            tableInfo = `<p class="mb-0"><strong>Table:</strong> ${tableName}</p>`;
+            tableInfo = `<p class="mb-0 receipt-meta"><strong>Table:</strong> ${tableName}</p>`;
         }
     }
-    
+
     if (guestId) {
         const guestOption = document.querySelector(`#guest-select option[value="${guestId}"]`);
         if (guestOption) {
-            guestInfo = `<p class="mb-0"><strong>Guest:</strong> ${guestOption.textContent}</p>`;
+            guestInfo = `<p class="mb-0 receipt-meta"><strong>Guest:</strong> ${guestOption.textContent}</p>`;
         }
     }
-    
-    document.getElementById('receipt-content').innerHTML = `
-        <div class="text-center mb-4">
-            <img src="{{ asset('logo.jpg') }}" alt="Optizee Hotel and Suites" style="max-width: 150px; max-height: 80px; margin-bottom: 15px;">
-            <h4>Optizee Hotel and Suites</h4>
-            <p class="mb-0">Invoice: ${sale.invoice_number}</p>
-            <p class="mb-0">${new Date(sale.created_at).toLocaleString()}</p>
+
+    return `
+        <div class="text-center mb-4 receipt-header">
+            ${receiptLogoHtml()}
+            <h4 class="receipt-title">${RECEIPT_BRAND_NAME}</h4>
+            <p class="mb-0 receipt-meta">Invoice: ${sale.invoice_number}</p>
+            <p class="mb-0 receipt-meta">${new Date(sale.created_at).toLocaleString()}</p>
             ${tableInfo}
             ${guestInfo}
         </div>
-        <table class="table table-sm">
+        <table class="table table-sm receipt-items-table">
             <thead>
                 <tr>
                     <th>Item</th>
@@ -3725,18 +3778,26 @@ function showReceipt(sale) {
                 ` : ''}
             </tfoot>
         </table>
-        <div class="text-center mt-4">
+        <div class="text-center mt-4 receipt-footer">
             <p class="mb-0">Thank you for your patronage!</p>
             <p class="mb-0">Served by: ${sale.user.name}</p>
         </div>
-        <div class="text-center mt-3 pt-3 border-top">
-            <p class="mb-1"><strong>Bank Transfer Details:</strong></p>
-            ${bankName ? `<p class="mb-0"><strong>Bank:</strong> ${bankName}</p>` : ''}
-            ${accountNumber ? `<p class="mb-0"><strong>Account Number:</strong> ${accountNumber}</p>` : ''}
-            ${accountName ? `<p class="mb-0"><strong>Account Name:</strong> ${accountName}</p>` : ''}
-        </div>
+        ${bankTransferDetailsHtml({
+            wrapperStyle: 'text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #000;',
+            lineClass: 'style="margin-bottom: 4px; color: #000; font-weight: 700;"',
+            titleMargin: 'margin-bottom: 0.5rem; color: #000; font-weight: 700;',
+        })}
     `;
+}
+
+function showReceipt(sale) {
+    currentSaleData = sale;
     
+    document.getElementById('receipt-content').innerHTML = buildReceiptBodyHtml(sale);
+    
+    const tableId = document.getElementById('table-select')?.value;
+    const guestId = document.getElementById('guest-select')?.value;
+
     // Show/hide close order button based on whether there's a table/guest
     const closeOrderBtn = document.getElementById('close-order-btn');
     if (tableId && guestId) {
@@ -3911,11 +3972,11 @@ function printOrderPreview() {
             const itemTotal = (item.unit_price * item.quantity) - (item.discount || 0);
             itemsHtml += `
                 <tr>
-                    <td>${item.name}</td>
-                    <td class="text-center">${item.quantity}</td>
-                    <td class="text-end">₦${item.unit_price.toFixed(2)}</td>
-                    ${item.discount > 0 ? `<td class="text-end">-₦${item.discount.toFixed(2)}</td>` : '<td class="text-end">-</td>'}
-                    <td class="text-end">₦${itemTotal.toFixed(2)}</td>
+                    <td class="preview-item-name">${item.name}</td>
+                    <td class="text-center preview-item-qty">${item.quantity}</td>
+                    <td class="text-end preview-item-price">₦${item.unit_price.toFixed(2)}</td>
+                    ${item.discount > 0 ? `<td class="text-end preview-item-disc">-₦${item.discount.toFixed(2)}</td>` : '<td class="text-end preview-item-disc">-</td>'}
+                    <td class="text-end preview-item-total">₦${itemTotal.toFixed(2)}</td>
                 </tr>
             `;
         });
@@ -3925,7 +3986,7 @@ function printOrderPreview() {
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Order Preview - Optizee Hotel and Suites</title>
+                <title>Order Preview - ${RECEIPT_BRAND_NAME}</title>
                 <meta charset="UTF-8">
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -3934,29 +3995,49 @@ function printOrderPreview() {
                         max-width: 300px; 
                         margin: 0 auto; 
                         padding: 20px;
-                        font-size: 12px;
+                        font-size: 13px;
+                        color: #000;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
                     }
-                    h4 { text-align: center; margin-bottom: 10px; }
+                    h4 { text-align: center; margin-bottom: 10px; color: #000; font-weight: 700; }
                     .header { text-align: center; margin-bottom: 15px; }
-                    .info-section { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
-                    p { margin: 5px 0; }
+                    .info-section { margin: 10px 0; padding: 10px; border: 1px solid #000; border-radius: 5px; }
+                    p { margin: 5px 0; color: #000; font-weight: 600; }
                     table { 
                         width: 100%; 
                         border-collapse: collapse; 
                         margin: 15px 0;
+                        color: #000;
                     }
                     th, td { 
-                        padding: 5px; 
+                        padding: 6px 4px; 
                         text-align: left; 
-                        border-bottom: 1px solid #ddd;
-                        font-size: 11px;
+                        border-bottom: 1px solid #000;
+                        font-size: 12px;
+                        color: #000 !important;
                     }
-                    th { font-weight: bold; background: #f0f0f0; }
+                    th {
+                        font-weight: 800;
+                        font-size: 11px;
+                        text-transform: uppercase;
+                        background: #fff;
+                    }
+                    .preview-item-name,
+                    .preview-item-qty,
+                    .preview-item-price,
+                    .preview-item-disc,
+                    .preview-item-total {
+                        font-weight: 700;
+                        color: #000 !important;
+                    }
+                    .preview-item-name { font-size: 13px; }
                     .text-center { text-align: center; }
                     .text-end { text-align: right; }
                     .text-right { text-align: right; }
-                    tfoot tr { font-weight: bold; }
+                    tfoot tr { font-weight: 800; }
                     .total-row { font-size: 14px; }
+                    strong { color: #000; font-weight: 800; }
                     .status-badge { 
                         display: inline-block; 
                         padding: 3px 8px; 
@@ -3965,9 +4046,11 @@ function printOrderPreview() {
                         border-radius: 3px; 
                         font-size: 10px;
                         margin-top: 10px;
+                        font-weight: 700;
                     }
                     @media print {
-                        body { margin: 0; padding: 10px; }
+                        body { margin: 0; padding: 10px; color: #000; }
+                        th, td, p, strong, h4 { color: #000 !important; }
                         @page { margin: 0.5cm; }
                         .no-print { display: none; }
                     }
@@ -3975,7 +4058,8 @@ function printOrderPreview() {
             </head>
             <body>
                 <div class="header">
-                    <h4>Optizee Hotel and Suites</h4>
+                    ${receiptLogoHtml()}
+                    <h4>${RECEIPT_BRAND_NAME}</h4>
                     <p class="mb-0"><strong>ORDER PREVIEW</strong></p>
                     <p class="mb-0">${new Date().toLocaleString()}</p>
                     <span class="status-badge">PENDING PAYMENT</span>
@@ -4024,6 +4108,9 @@ function printOrderPreview() {
                     <p class="mb-0"><strong>Note:</strong> This is an order preview. Payment not yet processed.</p>
                     <p class="mb-0" style="margin-top: 10px;">Thank you for your order!</p>
                 </div>
+                ${bankTransferDetailsHtml({
+                    wrapperStyle: 'text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #000;',
+                })}
             </body>
             </html>
         `;
@@ -4038,7 +4125,9 @@ function printOrderPreview() {
 
 function printReceipt() {
     try {
-        const content = document.getElementById('receipt-content').innerHTML;
+        const content = currentSaleData
+            ? buildReceiptBodyHtml(currentSaleData)
+            : document.getElementById('receipt-content').innerHTML;
         
         printHtmlInNewWindow(`
             <!DOCTYPE html>
@@ -4053,7 +4142,10 @@ function printReceipt() {
                         max-width: 300px; 
                         margin: 0 auto; 
                         padding: 20px;
-                        font-size: 12px;
+                        font-size: 13px;
+                        color: #000;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
                     }
                     .logo { 
                         text-align: center; 
@@ -4062,26 +4154,61 @@ function printReceipt() {
                     .logo img { 
                         max-width: 150px; 
                         max-height: 80px; 
-                        height: auto; 
+                        height: auto;
+                        display: block !important;
+                        margin: 0 auto 10px;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
                     }
-                    h4 { text-align: center; margin-bottom: 10px; }
-                    p { margin: 5px 0; }
-                    table { 
+                    img {
+                        display: block !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    h4, .receipt-title {
+                        text-align: center;
+                        margin-bottom: 10px;
+                        color: #000;
+                        font-weight: 700;
+                    }
+                    p, .receipt-meta, .receipt-footer p {
+                        margin: 5px 0;
+                        color: #000;
+                        font-weight: 600;
+                    }
+                    table, .receipt-items-table { 
                         width: 100%; 
                         border-collapse: collapse; 
                         margin: 15px 0;
+                        color: #000;
                     }
                     th, td { 
-                        padding: 5px; 
+                        padding: 6px 4px; 
                         text-align: left; 
-                        border-bottom: 1px solid #ddd;
+                        border-bottom: 1px solid #000;
+                        color: #000 !important;
                     }
-                    th { font-weight: bold; }
+                    th {
+                        font-weight: 800;
+                        font-size: 12px;
+                        text-transform: uppercase;
+                    }
+                    .receipt-item-name {
+                        font-weight: 700;
+                        font-size: 13px;
+                    }
+                    .receipt-item-qty,
+                    .receipt-item-total {
+                        font-weight: 700;
+                        font-size: 13px;
+                    }
                     .text-center { text-align: center; }
                     .text-end { text-align: right; }
-                    tfoot tr { font-weight: bold; }
+                    tfoot tr { font-weight: 800; }
+                    strong { color: #000; font-weight: 800; }
                     @media print {
-                        body { margin: 0; padding: 10px; }
+                        body { margin: 0; padding: 10px; color: #000; }
+                        th, td, p, strong, h4 { color: #000 !important; }
                         @page { margin: 0.5cm; }
                     }
                 </style>
