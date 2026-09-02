@@ -58,7 +58,12 @@
                     <h5 class="mb-3 text-primary"><i class="fe fe-calendar me-2"></i>Booking Period</h5>
                     <div class="row">
                         <div class="col-md-4">
-                            <p class="mb-2"><strong>Check-in:</strong><br>{{ $roomBooking->check_in_date ? $roomBooking->check_in_date->format('F d, Y') : 'N/A' }}</p>
+                            <p class="mb-2"><strong>Check-in:</strong><br>
+                                {{ $roomBooking->check_in_date ? $roomBooking->check_in_date->format('F d, Y') : 'N/A' }}
+                                @if($roomBooking->check_in_time)
+                                <br><small class="text-muted">{{ \Carbon\Carbon::parse($roomBooking->check_in_time)->format('h:i A') }}</small>
+                                @endif
+                            </p>
                         </div>
                         <div class="col-md-4">
                             <p class="mb-2"><strong>Check-out:</strong><br>{{ $roomBooking->check_out_date ? $roomBooking->check_out_date->format('F d, Y') : 'N/A' }}</p>

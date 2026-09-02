@@ -122,11 +122,15 @@
                             <!-- Overnight Booking Fields -->
                             <div id="overnight-fields">
                                 <div class="row mb-3">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label class="form-label">Check-in Date <span class="text-danger">*</span></label>
                                         <input type="date" id="check-in-date" class="form-control" min="{{ date('Y-m-d') }}" onchange="calculateNights()">
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Check-in Time <span class="text-danger">*</span></label>
+                                        <input type="time" id="overnight-check-in-time" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
                                         <label class="form-label">Check-out Date <span class="text-danger">*</span></label>
                                         <input type="date" id="check-out-date" class="form-control" min="{{ date('Y-m-d', strtotime('+1 day')) }}" onchange="calculateNights()">
                                     </div>
@@ -264,6 +268,17 @@ let selectedHourlyRate = 0;
 let isFullSuiteBooking = false;
 let amountPaidManuallyEdited = false;
 
+function setCurrentTimeInput(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) {
+        return;
+    }
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    input.value = `${hours}:${minutes}`;
+}
+
 function toggleBookingType() {
     const bookingType = document.getElementById('booking-type').value;
     const overnightFields = document.getElementById('overnight-fields');
@@ -274,14 +289,12 @@ function toggleBookingType() {
         shortStayFields.style.display = 'block';
         // Set today's date and current time
         document.getElementById('short-stay-date').value = new Date().toISOString().split('T')[0];
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        document.getElementById('check-in-time').value = `${hours}:${minutes}`;
+        setCurrentTimeInput('check-in-time');
         calculateHours();
     } else {
         overnightFields.style.display = 'block';
         shortStayFields.style.display = 'none';
+        setCurrentTimeInput('overnight-check-in-time');
         calculateNights();
     }
 }
@@ -442,13 +455,18 @@ function selectRoom(roomId, price, hourlyRate = 0, event) {
     
     const checkInInput = document.getElementById('check-in-date');
     const checkOutInput = document.getElementById('check-out-date');
-    if (checkInInput) {
+    if (checkInInput && !checkInInput.value) {
+        checkInInput.value = new Date().toISOString().split('T')[0];
+    }
+    if (checkOutInput) {
         const checkInDate = new Date(checkInInput.value || new Date().toISOString().split('T')[0]);
         checkInDate.setDate(checkInDate.getDate() + 1);
-        if (checkOutInput) {
-            checkOutInput.min = checkInDate.toISOString().split('T')[0];
+        checkOutInput.min = checkInDate.toISOString().split('T')[0];
+        if (!checkOutInput.value) {
+            checkOutInput.value = checkInDate.toISOString().split('T')[0];
         }
     }
+    setCurrentTimeInput('overnight-check-in-time');
     
     // Calculate based on current booking type
     const bookingType = document.getElementById('booking-type').value;
@@ -660,13 +678,20 @@ function processRoomBooking() {
     } else {
         const checkIn = document.getElementById('check-in-date').value;
         const checkOut = document.getElementById('check-out-date').value;
+        const checkInTime = document.getElementById('overnight-check-in-time').value;
         
         if (!checkIn || !checkOut) {
             alert('Please select check-in and check-out dates');
             return;
         }
+
+        if (!checkInTime) {
+            alert('Please select check-in time');
+            return;
+        }
         
         formDataObj.append('check_in_date', checkIn);
+        formDataObj.append('check_in_time', checkInTime);
         formDataObj.append('check_out_date', checkOut);
     }
     
@@ -743,6 +768,10 @@ function clearRoomBooking() {
     document.getElementById('guest-id-upload').value = '';
     document.getElementById('check-in-date').value = '';
     document.getElementById('check-out-date').value = '';
+    document.getElementById('overnight-check-in-time').value = '';
+    document.getElementById('short-stay-date').value = '';
+    document.getElementById('check-in-time').value = '';
+    document.getElementById('check-out-time').value = '';
     document.getElementById('room-amount-paid').value = '';
     amountPaidManuallyEdited = false;
     document.getElementById('room-discount').value = '0';

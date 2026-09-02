@@ -40,7 +40,7 @@ class RoomBookingController extends Controller
             'booking_type' => 'required|in:overnight,short_stay',
             'check_in_date' => 'required|date',
             'check_out_date' => 'required|date',
-            'check_in_time' => 'nullable|date_format:H:i',
+            'check_in_time' => 'required_if:booking_type,overnight|nullable|date_format:H:i',
             'check_out_time' => 'nullable|date_format:H:i',
             'hours_stayed' => 'nullable|integer|min:1',
             'hourly_rate' => 'nullable|numeric|min:0',
@@ -185,7 +185,9 @@ class RoomBookingController extends Controller
                 'user_id' => auth()->id(),
                 'shift_id' => auth()->user()->getOpenShift()?->id,
                 'check_in_date' => $checkIn->toDateString(),
-                'check_in_time' => $bookingType === 'short_stay' ? $checkIn->toTimeString() : null,
+                'check_in_time' => !empty($validated['check_in_time'])
+                    ? Carbon::parse($validated['check_in_time'])->format('H:i:s')
+                    : ($bookingType === 'short_stay' ? $checkIn->toTimeString() : null),
                 'check_out_date' => $checkOut->toDateString(),
                 'check_out_time' => $bookingType === 'short_stay' ? $checkOut->toTimeString() : null,
                 'number_of_nights' => $nights,
