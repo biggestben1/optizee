@@ -23,20 +23,43 @@
                 </div>
             </div>
             <div class="card-body">
-                <!-- Customer Selection -->
+                <!-- Customer Category -->
                 <div class="mb-4">
-                    <label class="form-label fw-semibold mb-2">Customer Account (Optional - for credit bookings)</label>
-                    <select id="customer-select" class="form-select select2">
-                        <option value="">Walk-in Customer</option>
-                        @foreach($customers as $customer)
-                        <option value="{{ $customer->id }}" 
-                                data-credit-limit="{{ $customer->credit_limit }}"
-                                data-credit-balance="{{ $customer->credit_balance }}">
-                            {{ $customer->name }} (Credit: ₦{{ number_format($customer->getAvailableCredit(), 2) }})
-                        </option>
-                        @endforeach
-                    </select>
-                    <small class="text-muted d-block mt-2">Only needed for credit bookings.</small>
+                    <label class="form-label fw-semibold mb-2">Customer Category</label>
+                    <div class="d-flex flex-wrap gap-3 mb-3 p-2 bg-light rounded shadow-sm">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="customer_category" id="category-walkin" value="walkin" checked onchange="toggleCustomerCategory()">
+                            <label class="form-check-label fw-semibold" for="category-walkin">Walk-in</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="customer_category" id="category-credit" value="credit" onchange="toggleCustomerCategory()">
+                            <label class="form-check-label fw-semibold" for="category-credit">Credit Account</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="customer_category" id="category-online" value="online" onchange="toggleCustomerCategory()">
+                            <label class="form-check-label fw-semibold" for="category-online">Online Booking</label>
+                        </div>
+                    </div>
+
+                    <div id="credit-customer-select-container" style="display: none;" class="p-3 border rounded border-primary bg-light-primary">
+                        <label class="form-label fw-semibold mb-2 text-primary">Customer Account (for credit bookings)</label>
+                        <select id="customer-select" class="form-select select2">
+                            <option value="">-- Choose Customer --</option>
+                            @foreach($customers as $customer)
+                            <option value="{{ $customer->id }}"
+                                    data-credit-limit="{{ $customer->credit_limit }}"
+                                    data-credit-balance="{{ $customer->credit_balance }}"
+                                    data-credit-enabled="{{ $customer->credit_enabled ? 'true' : 'false' }}">
+                                {{ $customer->name }} (Credit: ₦{{ number_format($customer->getAvailableCredit(), 2) }})
+                            </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted d-block mt-2">Required for credit bookings. Payment method will default to Credit.</small>
+                    </div>
+
+                    <div id="online-booking-hint" style="display: none;" class="mt-2">
+                        <small class="text-info"><i class="fe fe-globe me-1"></i>This booking will be marked as an online reservation.</small>
+                    </div>
                 </div>
 
                 <!-- Room Booking Section -->
@@ -171,8 +194,9 @@
                                         <input type="number" id="hours-stayed" class="form-control" readonly>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Hourly Rate</label>
-                                        <input type="text" id="hourly-rate" class="form-control" readonly>
+                                        <label class="form-label">Hourly Rate (₦) <span class="text-danger">*</span></label>
+                                        <input type="number" id="hourly-rate" class="form-control" min="0" step="0.01" placeholder="0.00" oninput="onHourlyRateChange()">
+                                        <small class="text-muted">You can edit this price for this booking.</small>
                                     </div>
                                 </div>
                             </div>
@@ -277,6 +301,73 @@ function setCurrentTimeInput(inputId) {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     input.value = `${hours}:${minutes}`;
+}
+
+function getSelectedCustomerCategory() {
+    const selected = document.querySelector('input[name="customer_category"]:checked');
+    return selected ? selected.value : 'walkin';
+}
+
+function toggleCustomerCategory() {
+    const category = getSelectedCustomerCategory();
+    const creditContainer = document.getElementById('credit-customer-select-container');
+    const onlineHint = document.getElementById('online-booking-hint');
+    const paymentMethod = document.getElementById('room-payment-method');
+    const amountPaidGroup = document.getElementById('room-amount-paid')?.closest('.mb-3');
+    const customerSelect = document.getElementById('customer-select');
+
+    if (creditContainer) {
+        creditContainer.style.display = category === 'credit' ? 'block' : 'none';
+    }
+    if (onlineHint) {
+        onlineHint.style.display = category === 'online' ? 'block' : 'none';
+    }
+
+    if (category !== 'credit' && customerSelect) {
+        customerSelect.value = '';
+        if (window.jQuery && jQuery(customerSelect).hasClass('select2-hidden-accessible')) {
+            jQuery(customerSelect).val(null).trigger('change');
+        }
+    }
+
+    if (paymentMethod) {
+        if (category === 'credit') {
+            paymentMethod.value = 'credit';
+        } else if (paymentMethod.value === 'credit') {
+            paymentMethod.value = 'cash';
+        }
+        toggleCreditPaymentUi();
+    }
+}
+
+function toggleCreditPaymentUi() {
+    const paymentMethod = document.getElementById('room-payment-method');
+    const amountPaidInput = document.getElementById('room-amount-paid');
+    const changeEl = document.getElementById('room-change');
+    if (!paymentMethod || !amountPaidInput) {
+        return;
+    }
+
+    const isCredit = paymentMethod.value === 'credit';
+    const amountPaidGroup = amountPaidInput.closest('.mb-3');
+    if (amountPaidGroup) {
+        amountPaidGroup.style.display = isCredit ? 'none' : 'block';
+    }
+
+    if (isCredit) {
+        amountPaidInput.value = '0';
+        amountPaidManuallyEdited = false;
+        if (changeEl) {
+            changeEl.textContent = '₦0.00';
+        }
+    } else {
+        autoFillRoomAmountPaid();
+    }
+}
+
+function onHourlyRateChange() {
+    selectedHourlyRate = parseFloat(document.getElementById('hourly-rate').value) || 0;
+    calculateShortStayTotal();
 }
 
 function toggleBookingType() {
@@ -450,7 +541,7 @@ function selectRoom(roomId, price, hourlyRate = 0, event) {
     }
     
     document.getElementById('room-price-per-night').value = `₦${parseFloat(price).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-    document.getElementById('hourly-rate').value = `₦${parseFloat(hourlyRate || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
+    document.getElementById('hourly-rate').value = parseFloat(hourlyRate || 0).toFixed(2);
     document.getElementById('room-booking-form').style.display = 'block';
     
     const checkInInput = document.getElementById('check-in-date');
@@ -625,14 +716,26 @@ function processRoomBooking() {
     }
     
     const bookingType = document.getElementById('booking-type').value;
+    const customerCategory = getSelectedCustomerCategory();
     
     // Use FormData for file upload support
     const formDataObj = new FormData();
     formDataObj.append('room_id', selectedRoomId);
     formDataObj.append('booking_type', bookingType);
+    formDataObj.append('booking_source', customerCategory);
 
-    const customerId = document.getElementById('customer-select')?.value;
-    if (customerId) {
+    if (customerCategory === 'credit') {
+        const customerId = document.getElementById('customer-select')?.value;
+        if (!customerId) {
+            alert('Please select a customer account for credit bookings');
+            return;
+        }
+        const selectedOption = document.getElementById('customer-select').selectedOptions[0];
+        const creditEnabled = selectedOption?.getAttribute('data-credit-enabled');
+        if (creditEnabled !== 'true' && creditEnabled !== '1') {
+            alert('This customer does not have credit enabled.');
+            return;
+        }
         formDataObj.append('customer_id', customerId);
     }
 
@@ -644,11 +747,20 @@ function processRoomBooking() {
         formDataObj.append('guest_email', guestEmail);
     }
 
+    let paymentMethod = document.getElementById('room-payment-method').value;
+    if (customerCategory === 'credit') {
+        paymentMethod = 'credit';
+    }
+
     formDataObj.append('discount', parseFloat(document.getElementById('room-discount').value) || 0);
     formDataObj.append('tax', parseFloat(document.getElementById('room-tax').value) || 0);
     formDataObj.append('service_charge', parseFloat(document.getElementById('room-service-charge').value) || 0);
-    formDataObj.append('payment_method', document.getElementById('room-payment-method').value);
-    formDataObj.append('amount_paid', parseFloat(document.getElementById('room-amount-paid').value.replace(/[,]/g, '')) || 0);
+    formDataObj.append('payment_method', paymentMethod);
+
+    const amountPaidValue = paymentMethod === 'credit'
+        ? 0
+        : (parseFloat(document.getElementById('room-amount-paid').value.replace(/[,]/g, '')) || 0);
+    formDataObj.append('amount_paid', amountPaidValue);
     formDataObj.append('notes', document.getElementById('room-notes').value);
     const suiteSelected = document.getElementById('room-category-select').selectedOptions[0]?.dataset.isSuite === '1';
     formDataObj.append('is_full_suite_booking', (isFullSuiteBooking && suiteSelected) ? '1' : '0');
@@ -663,9 +775,15 @@ function processRoomBooking() {
         const date = document.getElementById('short-stay-date').value;
         const checkInTime = document.getElementById('check-in-time').value;
         const checkOutTime = document.getElementById('check-out-time').value;
+        const hourlyRate = parseFloat(document.getElementById('hourly-rate').value) || selectedHourlyRate;
         
         if (!date || !checkInTime || !checkOutTime) {
             alert('Please fill in all short-stay booking details');
+            return;
+        }
+
+        if (!hourlyRate || hourlyRate <= 0) {
+            alert('Please enter a valid hourly rate');
             return;
         }
         
@@ -674,7 +792,7 @@ function processRoomBooking() {
         formDataObj.append('check_out_date', date);
         formDataObj.append('check_out_time', checkOutTime);
         formDataObj.append('hours_stayed', parseInt(document.getElementById('hours-stayed').value) || 0);
-        formDataObj.append('hourly_rate', selectedHourlyRate);
+        formDataObj.append('hourly_rate', hourlyRate);
     } else {
         const checkIn = document.getElementById('check-in-date').value;
         const checkOut = document.getElementById('check-out-date').value;
@@ -695,8 +813,7 @@ function processRoomBooking() {
         formDataObj.append('check_out_date', checkOut);
     }
     
-    const amountPaid = document.getElementById('room-amount-paid').value;
-    if (!amountPaid || parseFloat(amountPaid.replace(/[,]/g, '')) <= 0) {
+    if (paymentMethod !== 'credit' && amountPaidValue <= 0) {
         alert('Please enter the amount paid');
         return;
     }
@@ -772,17 +889,32 @@ function clearRoomBooking() {
     document.getElementById('short-stay-date').value = '';
     document.getElementById('check-in-time').value = '';
     document.getElementById('check-out-time').value = '';
+    document.getElementById('hourly-rate').value = '';
     document.getElementById('room-amount-paid').value = '';
     amountPaidManuallyEdited = false;
     document.getElementById('room-discount').value = '0';
     document.getElementById('room-tax').value = '0';
     document.getElementById('room-service-charge').value = '0';
     document.getElementById('room-notes').value = '';
+
+    const walkinRadio = document.getElementById('category-walkin');
+    if (walkinRadio) {
+        walkinRadio.checked = true;
+        toggleCustomerCategory();
+    }
     
     const url = new URL(window.location);
     url.searchParams.delete('room_id');
     window.history.replaceState({}, '', url);
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const paymentMethod = document.getElementById('room-payment-method');
+    if (paymentMethod) {
+        paymentMethod.addEventListener('change', toggleCreditPaymentUi);
+    }
+    toggleCustomerCategory();
+});
 </script>
 @endpush
 

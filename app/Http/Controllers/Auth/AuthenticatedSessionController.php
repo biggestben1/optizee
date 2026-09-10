@@ -31,7 +31,10 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
         if ($user && $user->isKitchen()) {
-            return redirect()->intended(route('admin.kitchen.index'));
+            return redirect()->intended(route('app.kitchen'));
+        }
+        if ($user && $user->isCashier()) {
+            return redirect()->intended(route('app.pos'));
         }
         if ($user && $user->isReceptionist()) {
             return redirect()->intended(route('admin.hotel-pos.index'));
@@ -76,7 +79,10 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         if ($user->isKitchen()) {
-            return redirect()->intended(route('admin.kitchen.index'));
+            return redirect()->intended(route('app.kitchen'));
+        }
+        if ($user->isCashier()) {
+            return redirect()->intended(route('app.pos'));
         }
         if ($user->isReceptionist()) {
             return redirect()->intended(route('admin.hotel-pos.index'));

@@ -38,6 +38,7 @@ class RoomBookingController extends Controller
         $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',
             'booking_type' => 'required|in:overnight,short_stay',
+            'booking_source' => 'nullable|in:walkin,credit,online',
             'check_in_date' => 'required|date',
             'check_out_date' => 'required|date',
             'check_in_time' => 'required_if:booking_type,overnight|nullable|date_format:H:i',
@@ -57,6 +58,13 @@ class RoomBookingController extends Controller
             'notes' => 'nullable|string',
             'is_full_suite_booking' => 'nullable|boolean',
         ]);
+
+        if ($validated['payment_method'] === 'credit' && empty($validated['customer_id'])) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Please select a customer account for credit bookings.'], 422);
+            }
+            return back()->with('error', 'Please select a customer account for credit bookings.');
+        }
 
         try {
             DB::beginTransaction();
@@ -174,8 +182,14 @@ class RoomBookingController extends Controller
             }
 
             // Create booking
+            $bookingSource = $validated['booking_source'] ?? 'walkin';
+            if (($validated['payment_method'] ?? null) === 'credit') {
+                $bookingSource = 'credit';
+            }
+
             $booking = RoomBooking::create([
                 'booking_type' => $bookingType,
+                'booking_source' => $bookingSource,
                 'room_id' => $room->id,
                 'customer_id' => $validated['customer_id'] ?? null,
                 'guest_name' => $validated['guest_name'],

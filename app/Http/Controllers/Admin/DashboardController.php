@@ -19,7 +19,11 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         if ($user->isKitchen()) {
-            return redirect()->route('admin.kitchen.index');
+            return redirect()->route('app.kitchen');
+        }
+
+        if ($user->isCashier()) {
+            return redirect()->route('app.pos');
         }
 
         if ($user->isReceptionist()) {

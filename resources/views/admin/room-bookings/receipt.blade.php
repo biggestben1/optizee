@@ -47,10 +47,22 @@
                 <!-- Guest Information Section -->
                 <div class="mb-4 pb-3 border-bottom">
                     <h5 class="mb-3 text-primary"><i class="fe fe-user me-2"></i>Guest Information</h5>
-                    <p class="mb-1"><strong>Name:</strong> {{ $roomBooking->customer->name ?? 'Walk-in Guest' }}</p>
-                    @if($roomBooking->customer)
-                    <p class="mb-0"><strong>Phone:</strong> {{ $roomBooking->customer->phone }}</p>
+                    <p class="mb-1"><strong>Name:</strong> {{ $roomBooking->guest_name ?: ($roomBooking->customer->name ?? 'Walk-in Guest') }}</p>
+                    @if($roomBooking->guest_phone || ($roomBooking->customer && $roomBooking->customer->phone))
+                    <p class="mb-1"><strong>Phone:</strong> {{ $roomBooking->guest_phone ?: $roomBooking->customer->phone }}</p>
                     @endif
+                    @if($roomBooking->customer)
+                    <p class="mb-1"><strong>Account:</strong> {{ $roomBooking->customer->name }}</p>
+                    @endif
+                    @php
+                        $sourceLabels = [
+                            'walkin' => 'Walk-in',
+                            'credit' => 'Credit Account',
+                            'online' => 'Online Booking',
+                        ];
+                        $source = $roomBooking->booking_source ?? 'walkin';
+                    @endphp
+                    <p class="mb-0"><strong>Source:</strong> {{ $sourceLabels[$source] ?? ucfirst($source) }}</p>
                 </div>
 
                 <!-- Booking Period Section -->

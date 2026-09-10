@@ -13,6 +13,7 @@ class RoomBooking extends Model
     protected $fillable = [
         'booking_number',
         'booking_type',
+        'booking_source',
         'room_id',
         'customer_id',
         'guest_name',

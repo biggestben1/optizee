@@ -32,12 +32,15 @@ class AdminMiddleware
         if ($user->role && $user->is_active) {
             $routeName = optional($request->route())->getName();
 
-            // Kitchen accounts can only use kitchen pages
+            // Kitchen accounts can only use kitchen pages + mobile staff app
             if ($user->isKitchen()) {
-                $allowed = $routeName && str_starts_with($routeName, 'admin.kitchen.');
+                $allowed = $routeName && (
+                    str_starts_with($routeName, 'admin.kitchen.')
+                    || str_starts_with($routeName, 'app.')
+                );
 
                 if (!$allowed) {
-                    return redirect()->route('admin.kitchen.index');
+                    return redirect()->route('app.kitchen');
                 }
             }
 

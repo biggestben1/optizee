@@ -41,7 +41,10 @@ Route::get('/', function () {
 // Dashboard route (redirects to admin dashboard)
 Route::middleware('auth')->get('/dashboard', function () {
     if (auth()->user()->isKitchen()) {
-        return redirect()->route('admin.kitchen.index');
+        return redirect()->route('app.kitchen');
+    }
+    if (auth()->user()->isCashier()) {
+        return redirect()->route('app.pos');
     }
     if (auth()->user()->isReceptionist()) {
         return redirect()->route('admin.hotel-pos.index');
@@ -251,3 +254,83 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+/*
+|--------------------------------------------------------------------------
+| Mobile Staff App (Cashier + Kitchen)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('app')->name('app.')->group(function () {
+    Route::get('/manifest.json', function () {
+        $user = auth()->user();
+        $startUrl = '/app';
+        $shortcuts = [];
+
+        if ($user && $user->isKitchen()) {
+            $startUrl = '/app/kitchen';
+            $shortcuts[] = [
+                'name' => 'Kitchen',
+                'short_name' => 'Kitchen',
+                'description' => 'Kitchen orders',
+                'url' => '/app/kitchen',
+                'icons' => [['src' => '/logo.jpg', 'sizes' => '96x96']],
+            ];
+        } elseif ($user && ($user->isCashier() || $user->canAccessPOS())) {
+            $startUrl = '/app/pos';
+            $shortcuts = [
+                [
+                    'name' => 'POS',
+                    'short_name' => 'POS',
+                    'description' => 'Cashier POS',
+                    'url' => '/app/pos',
+                    'icons' => [['src' => '/logo.jpg', 'sizes' => '96x96']],
+                ],
+                [
+                    'name' => 'Kitchen',
+                    'short_name' => 'Kitchen',
+                    'description' => 'Ready orders',
+                    'url' => '/app/kitchen',
+                    'icons' => [['src' => '/logo.jpg', 'sizes' => '96x96']],
+                ],
+            ];
+        }
+
+        return response()->json([
+            'name' => 'Optizee Staff',
+            'short_name' => 'Optizee Staff',
+            'description' => 'Cashier and Kitchen mobile app',
+            'start_url' => $startUrl,
+            'scope' => '/app',
+            'display' => 'standalone',
+            'background_color' => '#0f172a',
+            'theme_color' => '#0f172a',
+            'orientation' => 'portrait',
+            'icons' => [
+                [
+                    'src' => '/logo.jpg',
+                    'sizes' => '192x192',
+                    'type' => 'image/jpeg',
+                    'purpose' => 'any',
+                ],
+                [
+                    'src' => '/logo.jpg',
+                    'sizes' => '512x512',
+                    'type' => 'image/jpeg',
+                    'purpose' => 'any maskable',
+                ],
+            ],
+            'shortcuts' => $shortcuts,
+        ])->header('Content-Type', 'application/manifest+json');
+    })->name('manifest');
+
+    Route::get('/login', [\App\Http\Controllers\Mobile\MobileAppController::class, 'loginForm'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\Mobile\MobileAppController::class, 'login']);
+    Route::post('/login/quick', [\App\Http\Controllers\Mobile\MobileAppController::class, 'quickLogin'])->name('login.quick');
+
+    Route::middleware(['auth', 'mobile.staff'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Mobile\MobileAppController::class, 'home'])->name('home');
+        Route::get('/pos', [\App\Http\Controllers\Mobile\MobileAppController::class, 'pos'])->name('pos');
+        Route::get('/kitchen', [\App\Http\Controllers\Mobile\MobileAppController::class, 'kitchen'])->name('kitchen');
+        Route::post('/logout', [\App\Http\Controllers\Mobile\MobileAppController::class, 'logout'])->name('logout');
+    });
+});

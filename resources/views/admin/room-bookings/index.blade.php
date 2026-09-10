@@ -56,9 +56,14 @@
                                     @endif
                                 </td>
                                 <td>
-                                    {{ $booking->customer->name ?? 'Walk-in' }}
-                                    @if($booking->customer)
-                                    <br><small class="text-muted">{{ $booking->customer->phone }}</small>
+                                    {{ $booking->guest_name ?: ($booking->customer->name ?? 'Walk-in') }}
+                                    @if($booking->guest_phone || ($booking->customer && $booking->customer->phone))
+                                    <br><small class="text-muted">{{ $booking->guest_phone ?: $booking->customer->phone }}</small>
+                                    @endif
+                                    @if(($booking->booking_source ?? 'walkin') === 'online')
+                                    <br><span class="badge bg-info">Online</span>
+                                    @elseif(($booking->booking_source ?? null) === 'credit' || $booking->is_credit_booking)
+                                    <br><span class="badge bg-warning">Credit</span>
                                     @endif
                                 </td>
                                 <td>{{ $booking->check_in_date ? $booking->check_in_date->format('M d, Y') : 'N/A' }}</td>
