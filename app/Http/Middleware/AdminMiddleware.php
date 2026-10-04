@@ -40,7 +40,7 @@ class AdminMiddleware
                 );
 
                 if (!$allowed) {
-                    return redirect()->route('app.kitchen');
+                    return redirect()->route('admin.kitchen.index');
                 }
             }
 

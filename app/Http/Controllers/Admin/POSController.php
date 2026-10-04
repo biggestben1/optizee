@@ -124,6 +124,13 @@ class POSController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $validated += [
+            'customer_id' => null,
+            'table_id' => null,
+            'table_guest_id' => null,
+            'notes' => null,
+        ];
+
         // Get shift if available (optional)
         $shift = auth()->user()->getOpenShift();
 

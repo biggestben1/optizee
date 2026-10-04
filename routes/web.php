@@ -41,10 +41,10 @@ Route::get('/', function () {
 // Dashboard route (redirects to admin dashboard)
 Route::middleware('auth')->get('/dashboard', function () {
     if (auth()->user()->isKitchen()) {
-        return redirect()->route('app.kitchen');
+        return redirect()->route('admin.kitchen.index');
     }
     if (auth()->user()->isCashier()) {
-        return redirect()->route('app.pos');
+        return redirect()->route('admin.pos.index');
     }
     if (auth()->user()->isReceptionist()) {
         return redirect()->route('admin.hotel-pos.index');
