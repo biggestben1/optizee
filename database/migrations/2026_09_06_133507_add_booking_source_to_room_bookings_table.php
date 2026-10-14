@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('room_bookings', 'booking_source')) {
+            return;
+        }
+
         Schema::table('room_bookings', function (Blueprint $table) {
             $table->string('booking_source', 32)->default('walkin')->after('booking_type');
         });
