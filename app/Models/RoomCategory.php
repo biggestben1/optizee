@@ -17,6 +17,8 @@ class RoomCategory extends Model
         'description',
         'price_per_room',
         'hourly_rate',
+        'online_price_per_room',
+        'online_hourly_rate',
         'full_suite_price',
         'total_rooms',
         'is_suite',
@@ -26,6 +28,8 @@ class RoomCategory extends Model
     protected $casts = [
         'price_per_room' => 'decimal:2',
         'hourly_rate' => 'decimal:2',
+        'online_price_per_room' => 'decimal:2',
+        'online_hourly_rate' => 'decimal:2',
         'full_suite_price' => 'decimal:2',
         'is_suite' => 'boolean',
         'is_active' => 'boolean',

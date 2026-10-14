@@ -95,9 +95,11 @@ class ReportController extends Controller
     {
         $startDate = $request->filled('start_date') ? Carbon::parse($request->start_date) : now()->startOfMonth();
         $endDate = $request->filled('end_date') ? Carbon::parse($request->end_date) : now();
+        $posArea = array_key_exists((string) $request->pos_area, Sale::POS_AREAS) ? $request->pos_area : null;
 
         $sales = Sale::completed()
             ->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->forPosArea($posArea)
             ->with(['user', 'customer', 'items'])
             ->latest()
             ->get();
@@ -143,7 +145,7 @@ class ReportController extends Controller
             'rejected' => $purchaseRequisitions->where('status', 'rejected')->count(),
         ];
 
-        return view('admin.reports.sales', compact('sales', 'summary', 'dailySales', 'startDate', 'endDate', 'purchaseRequisitions', 'prSummary'));
+        return view('admin.reports.sales', compact('sales', 'summary', 'dailySales', 'startDate', 'endDate', 'purchaseRequisitions', 'prSummary', 'posArea'));
     }
 
     /**

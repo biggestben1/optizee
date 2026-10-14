@@ -113,6 +113,23 @@ class Room extends Model
         return round($this->getEffectivePrice() / 24, 2);
     }
 
+    /**
+     * Nightly price for online bookings: category online price, else the walk-in price.
+     */
+    public function getOnlinePrice(): float
+    {
+        $online = $this->category?->online_price_per_room;
+
+        return $online !== null && (float) $online > 0 ? (float) $online : $this->getEffectivePrice();
+    }
+
+    public function getOnlineHourlyRate(): float
+    {
+        $online = $this->category?->online_hourly_rate;
+
+        return $online !== null && (float) $online > 0 ? round((float) $online, 2) : $this->getEffectiveHourlyRate();
+    }
+
     public function getDisplayName(): string
     {
         if ($this->room_name) {

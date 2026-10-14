@@ -1,9 +1,9 @@
 @extends('layouts.admin')
 
-@section('title', 'Point of Sale')
+@section('title', \App\Models\Sale::POS_AREAS[$posArea] . ' Sales')
 
 @section('breadcrumb')
-<li class="breadcrumb-item active" aria-current="page">POS</li>
+<li class="breadcrumb-item active" aria-current="page">{{ \App\Models\Sale::POS_AREAS[$posArea] }}</li>
 @endsection
 
 @push('styles')
@@ -424,8 +424,15 @@
     <!-- Products Section -->
     <div class="col-12 col-lg-7">
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title mb-0">Products</h3>
+            <div class="card-header flex-wrap gap-2">
+                <div class="btn-group" role="group" aria-label="Switch POS">
+                    @foreach(\App\Models\Sale::POS_AREAS as $areaKey => $areaLabel)
+                    <a href="{{ route('admin.pos.index', array_merge(request()->only(['table_id', 'guest_id']), ['area' => $areaKey])) }}"
+                       class="btn {{ $posArea === $areaKey ? ($areaKey === 'kitchen' ? 'btn-success' : 'btn-primary') : 'btn-outline-secondary' }}">
+                        <i class="fe {{ $areaKey === 'kitchen' ? 'fe-coffee' : 'fe-shopping-cart' }} me-1"></i>{{ $areaLabel }}
+                    </a>
+                    @endforeach
+                </div>
                 <div class="ms-auto">
                     <input type="text" id="product-search" class="form-control" placeholder="Search products..." style="width: 250px;">
                 </div>
@@ -434,9 +441,6 @@
                 <!-- Categories -->
                 <div class="mb-3 d-flex flex-wrap align-items-center">
                     <button class="btn btn-outline-primary category-btn active" data-category="all">All</button>
-                    <button class="btn btn-outline-success category-btn" data-category="kitchen" data-kitchen-filter="true">
-                        <i class="fe fe-utensils me-1"></i>Kitchen / Food
-                    </button>
                     @foreach($categories as $category)
                     <button class="btn btn-outline-primary category-btn" data-category="{{ $category->id }}">{{ $category->name }}</button>
                     @endforeach
@@ -475,7 +479,7 @@
                     @else
                         <div class="col-12">
                             <div class="alert alert-info text-center py-5">
-                                <i class="fe fe-info me-2"></i>No products available. Please add products first.
+                                <i class="fe fe-info me-2"></i>No {{ $posArea === 'kitchen' ? 'food' : 'bar' }} products available. Please add products first.
                             </div>
                         </div>
                     @endif
@@ -966,6 +970,7 @@
 
 @push('scripts')
 <script>
+const POS_AREA = @json($posArea);
 @php
     $receiptLogoPath = public_path('logo.jpg');
     if (!file_exists($receiptLogoPath)) {
@@ -1314,7 +1319,7 @@ function loadPendingOrdersForTable(tableId) {
         return;
     }
     
-    fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}`, {
+    fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}&pos_area=${POS_AREA}`, {
         method: 'GET',
         cache: 'no-store',
         headers: {
@@ -1701,7 +1706,7 @@ function savePendingOrder(tableId, guestId, showIndicator = true) {
     if (cart.length === 0) {
         console.log('Cart is empty, deleting pending order for guest:', guestId);
         // Try to find and delete the pending order for this guest
-        return fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}&table_guest_id=${guestId}`, {
+        return fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}&table_guest_id=${guestId}&pos_area=${POS_AREA}`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -1738,7 +1743,8 @@ function savePendingOrder(tableId, guestId, showIndicator = true) {
         table_id: parseInt(tableId),
         table_guest_id: parseInt(guestId),
         customer_id: customerId ? parseInt(customerId) : null,
-        discount: discount
+        discount: discount,
+        pos_area: POS_AREA
     };
     
     console.log('Saving pending order for guest:', guestId, 'Items:', cart.length, requestData);
@@ -2225,7 +2231,7 @@ function loadPendingOrderForGuest(tableId, guestId) {
                 }
                 
                 // Now load pending order
-                return fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}&table_guest_id=${guestId}`, {
+                return fetch(`{{ route("admin.pos.get-pending") }}?table_id=${tableId}&table_guest_id=${guestId}&pos_area=${POS_AREA}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
@@ -2430,7 +2436,8 @@ function clearAllPendingOrders() {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify({ pos_area: POS_AREA })
     })
     .then(response => response.json())
     .then(data => {
@@ -3569,7 +3576,8 @@ function checkout() {
         amount_paid: amountPaid,
         discount: discount,
         vat_rate: vatRate,
-        notes: ''
+        notes: '',
+        pos_area: POS_AREA
     };
     
     console.log('Sending checkout request:', requestData);

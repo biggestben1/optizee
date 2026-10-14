@@ -63,7 +63,7 @@
                     </div>
 
                     <div id="online-booking-hint" style="display: none;" class="mt-2">
-                        <small class="text-info"><i class="fe fe-globe me-1"></i>This booking will be marked as an online reservation.</small>
+                        <small class="text-info"><i class="fe fe-globe me-1"></i>This booking will be marked as an online reservation and charged the online room rate.</small>
                     </div>
                 </div>
 
@@ -90,6 +90,9 @@
                                     · ₦{{ number_format($category->hourly_rate, 2) }}/hr
                                     @else
                                     · ~₦{{ number_format($category->price_per_room / 24, 2) }}/hr
+                                    @endif
+                                    @if($category->online_price_per_room)
+                                    · Online ₦{{ number_format($category->online_price_per_room, 2) }}/night
                                     @endif
                                     )
                                     @endif
@@ -318,6 +321,7 @@
 @push('scripts')
 <script>
 let selectedRoomId = null;
+let selectedRoom = null;
 let selectedRoomPrice = 0;
 let selectedHourlyRate = 0;
 let isFullSuiteBooking = false;
@@ -352,6 +356,10 @@ function toggleCustomerCategory() {
     }
     if (onlineHint) {
         onlineHint.style.display = category === 'online' ? 'block' : 'none';
+    }
+    if (selectedRoom) {
+        applyRoomRates();
+        recalculateRoomBooking();
     }
 
     if (category !== 'credit' && customerSelect) {
@@ -519,7 +527,7 @@ if (roomIdParam) {
                         loadRooms();
                         
                         setTimeout(() => {
-                            selectRoom(parseInt(roomIdParam), room.price_per_night, room.hourly_rate || 0);
+                            selectRoom(room);
                             console.log('Room selected:', roomIdParam);
                             
                             document.querySelectorAll('.room-card').forEach(card => {
@@ -573,13 +581,14 @@ function loadRooms() {
                             <h4 class="text-primary mb-2">₦${parseFloat(room.price_per_night).toLocaleString('en-NG', {minimumFractionDigits: 2})}</h4>
                             <small class="text-muted">per night</small>
                             <br><small class="text-info">₦${parseFloat(room.hourly_rate || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}/hour</small>
+                            ${parseFloat(room.online_price_per_night) !== parseFloat(room.price_per_night) ? `<br><small class="text-success"><i class="fe fe-globe"></i> Online: ₦${parseFloat(room.online_price_per_night).toLocaleString('en-NG', {minimumFractionDigits: 2})}/night</small>` : ''}
                             <br><br>
                             <span class="badge ${room.is_available ? 'bg-success' : 'bg-secondary'}">${room.status}</span>
                         </div>
                     `;
                     if (room.is_available) {
                         cardDiv.onclick = function(e) {
-                            selectRoom(room.id, room.price_per_night, room.hourly_rate || 0, e);
+                            selectRoom(room, e);
                         };
                     }
                     roomCard.appendChild(cardDiv);
@@ -595,10 +604,29 @@ function loadRooms() {
         });
 }
 
-function selectRoom(roomId, price, hourlyRate = 0, event) {
-    selectedRoomId = roomId;
-    selectedRoomPrice = price;
-    selectedHourlyRate = hourlyRate;
+function applyRoomRates() {
+    if (!selectedRoom) {
+        return;
+    }
+    const isOnline = getSelectedCustomerCategory() === 'online';
+    selectedRoomPrice = parseFloat(isOnline ? selectedRoom.online_price_per_night : selectedRoom.price_per_night) || 0;
+    selectedHourlyRate = parseFloat(isOnline ? selectedRoom.online_hourly_rate : selectedRoom.hourly_rate) || 0;
+
+    document.getElementById('room-price-per-night').value = `₦${selectedRoomPrice.toLocaleString('en-NG', {minimumFractionDigits: 2})}${isOnline ? ' (online rate)' : ''}`;
+    document.getElementById('hourly-rate').value = selectedHourlyRate.toFixed(2);
+}
+
+function recalculateRoomBooking() {
+    if (document.getElementById('booking-type').value === 'short_stay') {
+        calculateHours();
+    } else {
+        calculateNights();
+    }
+}
+
+function selectRoom(room, event) {
+    selectedRoom = room;
+    selectedRoomId = room.id;
     
     document.querySelectorAll('.room-card').forEach(card => {
         card.classList.remove('border-primary', 'bg-primary-transparent', 'shadow');
@@ -607,8 +635,7 @@ function selectRoom(roomId, price, hourlyRate = 0, event) {
         event.currentTarget.classList.add('border-primary', 'bg-primary-transparent', 'shadow');
     }
     
-    document.getElementById('room-price-per-night').value = `₦${parseFloat(price).toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
-    document.getElementById('hourly-rate').value = parseFloat(hourlyRate || 0).toFixed(2);
+    applyRoomRates();
     document.getElementById('room-booking-form').style.display = 'block';
     
     const checkInInput = document.getElementById('check-in-date');
@@ -625,14 +652,7 @@ function selectRoom(roomId, price, hourlyRate = 0, event) {
         }
     }
     setCurrentTimeInput('overnight-check-in-time');
-    
-    // Calculate based on current booking type
-    const bookingType = document.getElementById('booking-type').value;
-    if (bookingType === 'short_stay') {
-        calculateHours();
-    } else {
-        calculateNights();
-    }
+    recalculateRoomBooking();
 }
 
 function calculateNights() {
@@ -965,6 +985,7 @@ function processRoomBooking() {
 
 function clearRoomBooking() {
     selectedRoomId = null;
+    selectedRoom = null;
     selectedRoomPrice = 0;
     selectedHourlyRate = 0;
     document.getElementById('room-category-select').value = '';

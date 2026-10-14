@@ -158,15 +158,16 @@ class RoomBookingController extends Controller
             }
 
             // Calculate pricing
+            $isOnline = ($validated['booking_source'] ?? null) === 'online';
             if ($bookingType === 'short_stay') {
                 $sentHourly = $validated['hourly_rate'] ?? null;
                 $hourlyRate = ($sentHourly !== null && (float) $sentHourly > 0)
                     ? (float) $sentHourly
-                    : $room->getEffectiveHourlyRate();
+                    : ($isOnline ? $room->getOnlineHourlyRate() : $room->getEffectiveHourlyRate());
                 $subtotal = $hourlyRate * $hours;
                 $pricePerNight = 0;
             } else {
-                $pricePerNight = $room->getEffectivePrice();
+                $pricePerNight = $isOnline ? $room->getOnlinePrice() : $room->getEffectivePrice();
                 $subtotal = $pricePerNight * $nights;
                 $hourlyRate = 0;
             }

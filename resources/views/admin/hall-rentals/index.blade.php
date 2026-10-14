@@ -87,7 +87,7 @@
         </div>
     </div>
 
-    <div class="col-lg-5 mb-4">
+    <div class="col-lg-5 mb-4" id="occasions">
         <div class="card h-100">
             <div class="card-header">
                 <h4 class="card-title mb-0"><i class="fe fe-tag me-2"></i>Occasions &amp; Prices</h4>

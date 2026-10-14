@@ -46,7 +46,12 @@ class POSController extends Controller
 
     public function index(Request $request)
     {
-        $categories = Category::active()->with(['products' => fn($q) => $q->active()->where('stock_quantity', '>', 0)])->get();
+        $posArea = $this->resolvePosArea($request);
+        $categories = Category::active()
+            ->with(['parent', 'products' => fn($q) => $q->active()->where('stock_quantity', '>', 0)])
+            ->get()
+            ->filter(fn (Category $category) => ($category->salesArea() === 'kitchen') === ($posArea === 'kitchen'))
+            ->values();
         $customers = Customer::active()->get();
         $shift = auth()->user()->getOpenShift(); // Optional - for display only
         
@@ -85,7 +90,26 @@ class POSController extends Controller
             ->take(20)
             ->get();
 
-        return view('admin.pos.index', compact('categories', 'customers', 'shift', 'tables', 'selectedTable', 'selectedGuest', 'kitchenCategoryIds', 'readyKitchenOrders'));
+        return view('admin.pos.index', compact('categories', 'customers', 'shift', 'tables', 'selectedTable', 'selectedGuest', 'kitchenCategoryIds', 'readyKitchenOrders', 'posArea'));
+    }
+
+    /**
+     * Bar POS sells drinks and other non-food items; Kitchen POS sells food.
+     */
+    private function resolvePosArea(Request $request): string
+    {
+        if (array_key_exists((string) $request->area, Sale::POS_AREAS)) {
+            return $request->area;
+        }
+
+        if ($request->filled('sale_id')) {
+            $area = Sale::whereKey($request->sale_id)->value('pos_area');
+            if ($area && array_key_exists($area, Sale::POS_AREAS)) {
+                return $area;
+            }
+        }
+
+        return 'bar';
     }
 
     public function getProducts(Request $request)
@@ -122,6 +146,7 @@ class POSController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'vat_rate' => 'nullable|numeric|min:0|max:1',
             'notes' => 'nullable|string',
+            'pos_area' => 'nullable|in:bar,kitchen',
         ]);
 
         $validated += [
@@ -129,6 +154,7 @@ class POSController extends Controller
             'table_id' => null,
             'table_guest_id' => null,
             'notes' => null,
+            'pos_area' => null,
         ];
 
         // Get shift if available (optional)
@@ -208,12 +234,14 @@ class POSController extends Controller
                     ->where('table_guest_id', $validated['table_guest_id'] ?? null)
                     ->where('status', 'pending')
                     ->where('user_id', auth()->id())
+                    ->forPosArea($validated['pos_area'])
                     ->first();
             }
 
             if ($pendingSale) {
                 // Update pending sale to completed
                 $pendingSale->update([
+                    'pos_area' => $validated['pos_area'] ?? $pendingSale->pos_area,
                     'customer_id' => $validated['customer_id'],
                     'subtotal' => $subtotal,
                     'discount' => $discount,
@@ -239,6 +267,7 @@ class POSController extends Controller
                     'customer_id' => $validated['customer_id'],
                     'table_id' => $validated['table_id'] ?? null,
                     'table_guest_id' => $validated['table_guest_id'] ?? null,
+                    'pos_area' => $validated['pos_area'],
                     'subtotal' => $subtotal,
                     'discount' => $discount,
                     'tax' => $vatAmount,
@@ -293,7 +322,8 @@ class POSController extends Controller
 
             if (!empty($validated['table_guest_id'])) {
                 $guest = TableGuest::find($validated['table_guest_id']);
-                if ($guest) {
+                // A guest with an unpaid order at the other POS (bar/kitchen) stays seated.
+                if ($guest && !$guest->sales()->where('status', 'pending')->exists()) {
                     $guest->leave();
 
                     $table = $guest->table;
@@ -389,7 +419,9 @@ class POSController extends Controller
             'table_guest_id' => 'nullable',
             'customer_id' => 'nullable|exists:customers,id',
             'discount' => 'nullable|numeric|min:0',
+            'pos_area' => 'nullable|in:bar,kitchen',
         ]);
+        $posArea = $validated['pos_area'] ?? null;
 
         if (!empty($validated['table_guest_id']) && !TableGuest::find($validated['table_guest_id'])) {
             return response()->json([
@@ -444,11 +476,13 @@ class POSController extends Controller
                 ->where('table_guest_id', $validated['table_guest_id'] ?? null)
                 ->where('status', 'pending')
                 ->where('user_id', auth()->id())
+                ->forPosArea($posArea)
                 ->first();
 
             if ($existingPending) {
                 // Update existing pending sale
                 $existingPending->update([
+                    'pos_area' => $posArea ?? $existingPending->pos_area,
                     'customer_id' => $validated['customer_id'] ?? null,
                     'subtotal' => $subtotal,
                     'discount' => $discount,
@@ -469,6 +503,7 @@ class POSController extends Controller
                     'customer_id' => $validated['customer_id'] ?? null,
                     'table_id' => $validated['table_id'] ?? null,
                     'table_guest_id' => $validated['table_guest_id'] ?? null,
+                    'pos_area' => $posArea,
                     'subtotal' => $subtotal,
                     'discount' => $discount,
                     'tax' => $vatAmount,
@@ -523,7 +558,9 @@ class POSController extends Controller
             'table_id' => 'nullable',
             'table_guest_id' => 'nullable',
             'sale_id' => 'nullable',
+            'pos_area' => 'nullable|in:bar,kitchen',
         ]);
+        $posArea = $validated['pos_area'] ?? null;
 
         // If sale_id is provided, get that specific order
         if ($validated['sale_id'] ?? null) {
@@ -602,10 +639,11 @@ class POSController extends Controller
         }
 
         // If table_id is provided without guest_id, get all pending orders for that table
-        if ($validated['table_id'] ?? null && !($validated['table_guest_id'] ?? null)) {
+        if (!empty($validated['table_id']) && empty($validated['table_guest_id'])) {
             $pendingSales = Sale::where('table_id', $validated['table_id'])
                 ->where('status', 'pending')
                 ->where('user_id', auth()->id())
+                ->forPosArea($posArea)
                 ->where(function ($query) {
                     $query->whereNull('table_guest_id')
                         ->orWhereHas('tableGuest', function ($guestQuery) {
@@ -638,6 +676,7 @@ class POSController extends Controller
             ->where('table_guest_id', $validated['table_guest_id'] ?? null)
             ->where('status', 'pending')
             ->where('user_id', auth()->id())
+            ->forPosArea($posArea)
             ->with(['items.product', 'tableGuest', 'customer'])
             ->first();
 
@@ -679,13 +718,13 @@ class POSController extends Controller
      */
     public function clearPending(Request $request)
     {
-        $count = Sale::where('status', 'pending')
+        $posArea = in_array($request->input('pos_area'), ['bar', 'kitchen'], true) ? $request->input('pos_area') : null;
+        $pending = Sale::where('status', 'pending')
             ->where('user_id', auth()->id())
-            ->count();
+            ->forPosArea($posArea);
 
-        Sale::where('status', 'pending')
-            ->where('user_id', auth()->id())
-            ->delete();
+        $count = (clone $pending)->count();
+        $pending->delete();
 
         return response()->json([
             'success' => true,

@@ -231,10 +231,17 @@
                                     <span class="side-menu__label">Dashboard</span>
                                 </a>
                             </li>
+                            @php $onPos = request()->routeIs('admin.pos.*') && !request()->routeIs('admin.pos.supervisor*'); @endphp
                             <li class="slide">
-                                <a class="side-menu__item {{ request()->routeIs('admin.pos.*') && !request()->routeIs('admin.pos.supervisor*') ? 'active' : '' }}" href="{{ route('admin.pos.index') }}">
+                                <a class="side-menu__item {{ $onPos && request('area') !== 'kitchen' ? 'active' : '' }}" href="{{ route('admin.pos.index', ['area' => 'bar']) }}">
                                     <i class="side-menu__icon fe fe-shopping-cart"></i>
-                                    <span class="side-menu__label">POS / Sales</span>
+                                    <span class="side-menu__label">Bar POS Sales</span>
+                                </a>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ $onPos && request('area') === 'kitchen' ? 'active' : '' }}" href="{{ route('admin.pos.index', ['area' => 'kitchen']) }}">
+                                    <i class="side-menu__icon fe fe-coffee"></i>
+                                    <span class="side-menu__label">Kitchen POS Sales</span>
                                 </a>
                             </li>
                             @if(!auth()->user()->isCashier())
@@ -399,6 +406,14 @@
                                     <span class="side-menu__label">Rooms</span>
                                 </a>
                             </li>
+                            @if(auth()->user()->is_admin || auth()->user()->isManager())
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.booking-prices.*') ? 'active' : '' }}" href="{{ route('admin.booking-prices.index') }}">
+                                    <i class="side-menu__icon fe fe-tag"></i>
+                                    <span class="side-menu__label">Booking Prices</span>
+                                </a>
+                            </li>
+                            @endif
                             <li class="slide">
                                 <a class="side-menu__item {{ request()->routeIs('admin.room-bookings.*') ? 'active' : '' }}" href="{{ route('admin.room-bookings.index') }}">
                                     <i class="side-menu__icon fe fe-calendar"></i>

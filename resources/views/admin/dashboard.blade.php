@@ -158,8 +158,13 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
-                        <a href="{{ route('admin.pos.index') }}" class="btn btn-primary btn-lg w-100">
-                            <i class="fe fe-shopping-cart me-2"></i> New Sale
+                        <a href="{{ route('admin.pos.index', ['area' => 'bar']) }}" class="btn btn-primary btn-lg w-100">
+                            <i class="fe fe-shopping-cart me-2"></i> Bar POS Sale
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <a href="{{ route('admin.pos.index', ['area' => 'kitchen']) }}" class="btn btn-success btn-lg w-100">
+                            <i class="fe fe-coffee me-2"></i> Kitchen POS Sale
                         </a>
                     </div>
                     @if(!$isCashier)
@@ -206,6 +211,13 @@
                     <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
                         <a href="{{ route('admin.hall-rentals.create') }}" class="btn btn-outline-primary btn-lg w-100">
                             <i class="fe fe-star me-2"></i> Hall Rental
+                        </a>
+                    </div>
+                    @endif
+                    @if(auth()->user()->is_admin || auth()->user()->isManager())
+                    <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <a href="{{ route('admin.booking-prices.index') }}" class="btn btn-outline-success btn-lg w-100">
+                            <i class="fe fe-tag me-2"></i> Booking Prices
                         </a>
                     </div>
                     @endif

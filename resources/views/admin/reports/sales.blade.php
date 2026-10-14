@@ -12,20 +12,29 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">Start Date</label>
                 <input type="date" name="start_date" class="form-control" value="{{ $startDate->format('Y-m-d') }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">End Date</label>
                 <input type="date" name="end_date" class="form-control" value="{{ $endDate->format('Y-m-d') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">POS</label>
+                <select name="pos_area" class="form-select">
+                    <option value="">All POS Sales</option>
+                    @foreach(\App\Models\Sale::POS_AREAS as $areaKey => $areaLabel)
+                    <option value="{{ $areaKey }}" {{ $posArea === $areaKey ? 'selected' : '' }}>{{ $areaLabel }} Sales</option>
+                    @endforeach
+                </select>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary">
                     <i class="fe fe-filter me-1"></i> Filter
                 </button>
             </div>
-            <div class="col-md-4 text-end">
+            <div class="col-md-3 text-end">
                 <a href="{{ route('admin.reports.export.sales', ['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')]) }}" class="btn btn-success">
                     <i class="fe fe-download me-1"></i> Download Excel
                 </a>
@@ -259,7 +268,7 @@
 <!-- All Sales -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h4 class="card-title mb-0">All Sales ({{ $startDate->format('M d') }} - {{ $endDate->format('M d, Y') }})</h4>
+        <h4 class="card-title mb-0">{{ $posArea ? \App\Models\Sale::POS_AREAS[$posArea] : 'All' }} Sales ({{ $startDate->format('M d') }} - {{ $endDate->format('M d, Y') }})</h4>
         <button type="button" class="btn btn-danger btn-sm" onclick="clearAllSalesAndOrders()">
             <i class="fe fe-trash-2 me-1"></i>Clear All Sales & Pending Orders
         </button>
@@ -273,6 +282,7 @@
                         <th>Date/Time</th>
                         <th>Cashier</th>
                         <th>Customer</th>
+                        <th>POS</th>
                         <th>Payment</th>
                         <th class="text-end">Subtotal</th>
                         <th class="text-end">VAT</th>
@@ -290,6 +300,9 @@
                         <td>{{ $sale->user->name }}</td>
                         <td>{{ $sale->customer?->name ?? 'Walk-in' }}</td>
                         <td>
+                            <span class="badge {{ $sale->pos_area === 'kitchen' ? 'bg-success' : 'bg-primary' }}">{{ $sale->pos_area === 'kitchen' ? 'Kitchen' : 'Bar' }}</span>
+                        </td>
+                        <td>
                             @if($sale->is_credit_sale)
                             <span class="badge bg-warning">Credit</span>
                             @else
@@ -305,7 +318,7 @@
                 </tbody>
                 <tfoot>
                     <tr class="bg-light">
-                        <th colspan="5" class="text-end">Total:</th>
+                        <th colspan="6" class="text-end">Total:</th>
                         <th class="text-end">₦{{ number_format($summary['total_subtotal'] ?? 0, 2) }}</th>
                         <th class="text-end">₦{{ number_format($summary['total_vat'] ?? 0, 2) }}</th>
                         <th class="text-end">₦{{ number_format($summary['total_sales'], 2) }}</th>

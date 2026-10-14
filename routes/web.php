@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\StaffAssignmentController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\HotelPOSController;
+use App\Http\Controllers\Admin\BookingPriceController;
 use App\Http\Controllers\Admin\HallRentalController;
 use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\Admin\RoomBookingController;
@@ -213,6 +214,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/room-bookings/{roomBooking}/receipt', [RoomBookingController::class, 'receipt'])->name('room-bookings.receipt');
 
     // Hall Rentals
+    Route::get('/booking-prices', [BookingPriceController::class, 'index'])->name('booking-prices.index');
+    Route::put('/booking-prices/rooms', [BookingPriceController::class, 'updateRooms'])->name('booking-prices.rooms');
+    Route::put('/booking-prices/halls', [BookingPriceController::class, 'updateHalls'])->name('booking-prices.halls');
+
     Route::get('/hall-rentals', [HallRentalController::class, 'index'])->name('hall-rentals.index');
     Route::get('/hall-rentals/create', [HallRentalController::class, 'create'])->name('hall-rentals.create');
     Route::post('/hall-rentals', [HallRentalController::class, 'store'])->name('hall-rentals.store');

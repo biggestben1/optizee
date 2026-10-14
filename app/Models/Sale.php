@@ -11,6 +11,11 @@ class Sale extends Model
 {
     use HasFactory;
 
+    public const POS_AREAS = [
+        'bar' => 'Bar POS',
+        'kitchen' => 'Kitchen POS',
+    ];
+
     protected $fillable = [
         'invoice_number',
         'user_id',
@@ -18,6 +23,7 @@ class Sale extends Model
         'customer_id',
         'table_id',
         'table_guest_id',
+        'pos_area',
         'subtotal',
         'discount',
         'tax',
@@ -174,6 +180,22 @@ class Sale extends Model
     public function scopeKitchenReady($query)
     {
         return $query->where('kitchen_status', 'ready');
+    }
+
+    /**
+     * Sales made before Bar/Kitchen POS were split have no area and count as bar.
+     */
+    public function scopeForPosArea($query, ?string $area)
+    {
+        if ($area === 'kitchen') {
+            return $query->where('pos_area', 'kitchen');
+        }
+
+        if ($area === 'bar') {
+            return $query->where(fn ($q) => $q->where('pos_area', 'bar')->orWhereNull('pos_area'));
+        }
+
+        return $query;
     }
 
     public function markAsReady(int $userId): void
