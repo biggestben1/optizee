@@ -29,7 +29,8 @@
                             <tr>
                                 <th>Category Name</th>
                                 <th>Type</th>
-                                <th>Price per Night</th>
+                                <th>Walk-in / Night</th>
+                                <th class="text-success">Online / Night</th>
                                 <th>Hourly Rate</th>
                                 <th>Full Suite Price</th>
                                 <th>Total Rooms</th>
@@ -58,6 +59,13 @@
                                     ₦{{ number_format((float)$category->price_per_room, 2) }}
                                     @else
                                     <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($category->online_price_per_room)
+                                    <span class="text-success fw-semibold">₦{{ number_format((float)$category->online_price_per_room, 2) }}</span>
+                                    @else
+                                    <span class="text-muted">Same as walk-in</span>
                                     @endif
                                 </td>
                                 <td>
@@ -102,7 +110,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     <i class="fe fe-home" style="font-size: 48px;"></i>
                                     <p class="mt-2 mb-0">No room categories found.</p>
                                     <a href="{{ route('admin.room-categories.create') }}" class="btn btn-primary mt-3">

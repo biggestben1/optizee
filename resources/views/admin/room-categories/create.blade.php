@@ -50,13 +50,23 @@
 
                     <div id="standard-fields">
                         <div class="mb-3">
-                            <label class="form-label">Price per Room (₦) <span class="text-danger">*</span></label>
+                            <label class="form-label">Walk-in Price per Night (₦) <span class="text-danger">*</span></label>
                             <input type="number" name="price_per_room" class="form-control @error('price_per_room') is-invalid @enderror" 
                                    value="{{ old('price_per_room') }}" step="0.01" min="0" placeholder="35000" required>
                             @error('price_per_room')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <small class="text-muted">Price per night for standard rooms</small>
+                            <small class="text-muted">Charged for walk-in and credit bookings</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-success"><i class="fe fe-globe me-1"></i>Online Price per Night (₦)</label>
+                            <input type="number" name="online_price_per_room" class="form-control @error('online_price_per_room') is-invalid @enderror" 
+                                   value="{{ old('online_price_per_room') }}" step="0.01" min="0" placeholder="Same as walk-in price">
+                            @error('online_price_per_room')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Charged when "Online Booking" is selected in Hotel POS. Leave empty to use the walk-in price.</small>
                         </div>
 
                         <div class="mb-3">
@@ -67,6 +77,15 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <small class="text-muted">For short-stay bookings (defaults to daily rate ÷ 24 if not set)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-success"><i class="fe fe-globe me-1"></i>Online Hourly Rate (₦) (Optional)</label>
+                            <input type="number" name="online_hourly_rate" class="form-control @error('online_hourly_rate') is-invalid @enderror" 
+                                   value="{{ old('online_hourly_rate') }}" step="0.01" min="0" placeholder="Same as walk-in hourly rate">
+                            @error('online_hourly_rate')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="mb-3">
