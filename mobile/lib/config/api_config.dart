@@ -1,6 +1,6 @@
 class ApiConfig {
-  /// Default for local Valet/Herd. Change on login screen for phone testing.
-  static const String defaultBaseUrl = 'http://optizee.test/api';
+  /// Production staff API. Override on login screen if needed.
+  static const String defaultBaseUrl = 'https://optizeehotel.site/api';
 
   static const String tokenKey = 'staff_token';
   static const String baseUrlKey = 'staff_base_url';

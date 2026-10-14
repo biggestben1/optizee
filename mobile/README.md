@@ -23,11 +23,23 @@ flutter run
 
 ### Server URL on a real phone
 
-On login, open **Server settings** and set your LAN API URL, e.g.:
+Default is `https://optizeehotel.site/api` (production).
 
-`http://192.168.1.20/api`
+For local Valet/Herd use `http://optizee.test/api`.
 
-Default is `http://optizee.test/api` (local Valet/Herd).
+On login, open **Server settings** to override if needed.
+
+## Build APK
+
+```bash
+cd mobile
+flutter pub get
+dart run flutter_launcher_icons
+flutter build apk --release
+```
+
+APK output: `build/app/outputs/flutter-apk/app-release.apk`  
+(also copied to `dist/optizee-staff.apk`)
 
 ## Laravel API
 
