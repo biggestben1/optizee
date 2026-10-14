@@ -37,6 +37,9 @@ class RoomBooking extends Model
         'total',
         'amount_paid',
         'change',
+        'cash_amount',
+        'transfer_amount',
+        'pos_amount',
         'payment_method',
         'status',
         'is_credit_booking',
@@ -61,6 +64,9 @@ class RoomBooking extends Model
         'total' => 'decimal:2',
         'amount_paid' => 'decimal:2',
         'change' => 'decimal:2',
+        'cash_amount' => 'decimal:2',
+        'transfer_amount' => 'decimal:2',
+        'pos_amount' => 'decimal:2',
         'is_credit_booking' => 'boolean',
         'is_full_suite_booking' => 'boolean',
         'cancelled_at' => 'datetime',
@@ -137,5 +143,36 @@ class RoomBooking extends Model
     public function canCheckOut(): bool
     {
         return $this->status === 'checked-in' && $this->check_out_date && $this->check_out_date <= today();
+    }
+
+    public function isShortStay(): bool
+    {
+        return in_array($this->booking_type, ['short_stay', 'short-stay'], true);
+    }
+
+    /**
+     * Money actually received for this booking, split by channel.
+     * Mixed bookings recorded before the split existed land in 'unsplit'.
+     */
+    public function paymentBreakdown(): array
+    {
+        $cash = (float) $this->cash_amount;
+        $transfer = (float) $this->transfer_amount;
+        $pos = (float) $this->pos_amount;
+        $credit = $this->is_credit_booking ? (float) $this->total : 0.0;
+        $received = max(0, (float) $this->amount_paid - (float) $this->change);
+
+        $unsplit = 0.0;
+        if (!$this->is_credit_booking && ($cash + $transfer + $pos) == 0 && $received > 0) {
+            $unsplit = $received;
+        }
+
+        return [
+            'cash' => $cash,
+            'transfer' => $transfer,
+            'pos' => $pos,
+            'credit' => $credit,
+            'unsplit' => $unsplit,
+        ];
     }
 }

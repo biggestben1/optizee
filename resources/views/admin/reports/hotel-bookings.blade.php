@@ -164,7 +164,16 @@
                                     <strong>₦{{ number_format((float)$summary['credit_bookings'], 2) }}</strong>
                                 </div>
                             </div>
+                            @if($summary['unsplit_bookings'] > 0)
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <span>Mixed (recorded before split):</span>
+                                    <strong>₦{{ number_format((float)$summary['unsplit_bookings'], 2) }}</strong>
+                                </div>
+                            </div>
+                            @endif
                         </div>
+                        <small class="text-muted">Amounts actually received. Mixed payments are counted in each channel.</small>
                     </div>
                 </div>
             </div>
@@ -227,28 +236,50 @@
                 <h5 class="card-title mb-0">Daily Breakdown</h5>
             </div>
             <div class="card-body">
+                <p class="text-muted small mb-2">Cash column = cash at hand for the day (change already deducted).</p>
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Total Bookings</th>
-                                <th>Overnight</th>
-                                <th>Short Stay</th>
-                                <th>Total Revenue</th>
+                                <th class="text-center">Bookings</th>
+                                <th class="text-center">Overnight</th>
+                                <th class="text-center">Short Stay</th>
+                                <th class="text-end">Cash</th>
+                                <th class="text-end">Transfer</th>
+                                <th class="text-end">POS</th>
+                                <th class="text-end">Credit</th>
+                                <th class="text-end">Total Revenue</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($dailyBookings as $date => $data)
                             <tr>
                                 <td>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</td>
-                                <td>{{ $data['count'] }}</td>
-                                <td>{{ $data['overnight'] }}</td>
-                                <td>{{ $data['short_stay'] }}</td>
-                                <td>₦{{ number_format((float)$data['total'], 2) }}</td>
+                                <td class="text-center">{{ $data['count'] }}</td>
+                                <td class="text-center">{{ $data['overnight'] }}</td>
+                                <td class="text-center">{{ $data['short_stay'] }}</td>
+                                <td class="text-end text-success fw-semibold">₦{{ number_format((float)$data['cash'], 2) }}</td>
+                                <td class="text-end">₦{{ number_format((float)$data['transfer'], 2) }}</td>
+                                <td class="text-end">₦{{ number_format((float)$data['pos'], 2) }}</td>
+                                <td class="text-end">₦{{ number_format((float)$data['credit'], 2) }}</td>
+                                <td class="text-end fw-bold">₦{{ number_format((float)$data['total'], 2) }}</td>
                             </tr>
                             @endforeach
                         </tbody>
+                        <tfoot>
+                            <tr class="bg-light fw-bold">
+                                <td>Total</td>
+                                <td class="text-center">{{ $summary['total_bookings'] }}</td>
+                                <td class="text-center">{{ $summary['overnight_bookings'] }}</td>
+                                <td class="text-center">{{ $summary['short_stay_bookings'] }}</td>
+                                <td class="text-end text-success">₦{{ number_format((float)$summary['cash_bookings'], 2) }}</td>
+                                <td class="text-end">₦{{ number_format((float)$summary['transfer_bookings'], 2) }}</td>
+                                <td class="text-end">₦{{ number_format((float)$summary['pos_bookings'], 2) }}</td>
+                                <td class="text-end">₦{{ number_format((float)$summary['credit_bookings'], 2) }}</td>
+                                <td class="text-end">₦{{ number_format((float)$summary['total_revenue'], 2) }}</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -307,7 +338,7 @@
                                     <span class="text-muted">N/A</span>
                                     @endif
                                 </td>
-                                <td>{{ $booking->customer ? $booking->customer->name : 'Walk-in' }}</td>
+                                <td>{{ $booking->guest_name ?: ($booking->customer ? $booking->customer->name : 'Walk-in') }}</td>
                                 <td>
                                     {{ $booking->check_in_date ? $booking->check_in_date->format('M d, Y') : 'N/A' }}
                                     @if($booking->check_in_time)
@@ -321,14 +352,14 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($booking->booking_type === 'short-stay')
+                                    @if($booking->isShortStay())
                                     <span class="badge bg-info">Short Stay</span>
                                     @else
                                     <span class="badge bg-primary">Overnight</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if($booking->booking_type === 'short-stay')
+                                    @if($booking->isShortStay())
                                     {{ $booking->hours_stayed }} hour(s)
                                     @else
                                     {{ $booking->number_of_nights }} night(s)

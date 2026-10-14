@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\PurchaseRequisition;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PurchaseRequisitionController extends Controller
 {
@@ -22,7 +23,13 @@ class PurchaseRequisitionController extends Controller
 
     public function index(Request $request)
     {
+        $department = array_key_exists($request->department, PurchaseRequisition::DEPARTMENTS) ? $request->department : null;
+
         $query = PurchaseRequisition::with(['requestedBy', 'approvedBy']);
+
+        if ($department) {
+            $query->where('department', $department);
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -32,20 +39,31 @@ class PurchaseRequisitionController extends Controller
             $query->whereDate('pr_date', $request->date);
         }
 
-        $prs = $query->latest('pr_date')->paginate(20);
+        $prs = $query->latest('pr_date')->paginate(20)->withQueryString();
 
-        return view('admin.purchase-requisitions.index', compact('prs'));
+        $departmentTotals = PurchaseRequisition::where('status', '!=', 'rejected')
+            ->whereMonth('pr_date', now()->month)
+            ->whereYear('pr_date', now()->year)
+            ->selectRaw('department, SUM(amount) as total, COUNT(*) as count')
+            ->groupBy('department')
+            ->get()
+            ->keyBy('department');
+
+        return view('admin.purchase-requisitions.index', compact('prs', 'department', 'departmentTotals'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $categories = Category::active()->with(['products' => fn($q) => $q->active()])->get();
-        return view('admin.purchase-requisitions.create', compact('categories'));
+        $categories = Category::active()->with(['parent', 'products' => fn($q) => $q->active()])->get();
+        $department = array_key_exists($request->department, PurchaseRequisition::DEPARTMENTS) ? $request->department : null;
+
+        return view('admin.purchase-requisitions.create', compact('categories', 'department'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'department' => ['required', Rule::in(array_keys(PurchaseRequisition::DEPARTMENTS))],
             'pr_date' => 'required|date',
             'description' => 'required|string|max:500',
             'items_description' => 'nullable|string',
@@ -54,19 +72,20 @@ class PurchaseRequisitionController extends Controller
         ]);
 
         $pr = PurchaseRequisition::create([
+            'department' => $validated['department'],
             'pr_date' => $validated['pr_date'],
             'requested_by' => auth()->id(),
             'description' => $validated['description'],
-            'items_description' => $validated['items_description'],
+            'items_description' => $validated['items_description'] ?? null,
             'amount' => $validated['amount'],
-            'notes' => $validated['notes'],
+            'notes' => $validated['notes'] ?? null,
             'status' => 'pending',
         ]);
 
-        AuditLog::log('pr_created', "Created Purchase Requisition {$pr->pr_number} for ₦{$pr->amount}", $pr);
+        AuditLog::log('pr_created', "Created {$pr->department_label} Purchase Requisition {$pr->pr_number} for ₦{$pr->amount}", $pr);
 
-        return redirect()->route('admin.purchase-requisitions.index')
-            ->with('success', 'Purchase Requisition created successfully.');
+        return redirect()->route('admin.purchase-requisitions.index', ['department' => $pr->department])
+            ->with('success', "{$pr->department_label} purchase requisition created successfully.");
     }
 
     public function show(PurchaseRequisition $purchaseRequisition)
@@ -93,6 +112,7 @@ class PurchaseRequisitionController extends Controller
         }
 
         $validated = $request->validate([
+            'department' => ['required', Rule::in(array_keys(PurchaseRequisition::DEPARTMENTS))],
             'pr_date' => 'required|date',
             'description' => 'required|string|max:500',
             'items_description' => 'nullable|string',

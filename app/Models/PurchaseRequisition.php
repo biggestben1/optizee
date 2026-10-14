@@ -10,9 +10,17 @@ class PurchaseRequisition extends Model
 {
     use HasFactory;
 
+    public const DEPARTMENTS = [
+        'bar' => 'Bar',
+        'kitchen' => 'Kitchen',
+        'hotel' => 'Hotel',
+        'general' => 'General',
+    ];
+
     protected $fillable = [
         'pr_number',
         'pr_date',
+        'department',
         'requested_by',
         'approved_by',
         'description',
@@ -49,6 +57,11 @@ class PurchaseRequisition extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function getDepartmentLabelAttribute(): string
+    {
+        return self::DEPARTMENTS[$this->department] ?? ucfirst((string) $this->department);
     }
 
     public function scopePending($query)

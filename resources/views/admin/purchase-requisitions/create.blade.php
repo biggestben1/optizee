@@ -52,6 +52,21 @@
                     @csrf
 
                     <div class="mb-3">
+                        <label class="form-label">Department <span class="text-danger">*</span></label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach(\App\Models\PurchaseRequisition::DEPARTMENTS as $key => $label)
+                            <input type="radio" class="btn-check" name="department" id="dept-{{ $key }}" value="{{ $key }}"
+                                   @checked(old('department', $department) === $key) onchange="applyDepartment()" required>
+                            <label class="btn btn-outline-primary" for="dept-{{ $key }}">{{ $label }}</label>
+                            @endforeach
+                        </div>
+                        <small class="text-muted">Bar and Kitchen purchases are tracked separately. The product list below shows only that department's items.</small>
+                        @error('department')
+                        <div class="text-danger small">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">PR Date <span class="text-danger">*</span></label>
                         <input type="date" name="pr_date" class="form-control @error('pr_date') is-invalid @enderror" 
                                value="{{ old('pr_date', date('Y-m-d')) }}" required>
@@ -121,9 +136,9 @@
                     <input type="text" id="product-search" class="form-control" placeholder="Search products...">
                 </div>
                 <div class="mb-3 d-flex flex-wrap gap-2">
-                    <button class="btn btn-outline-primary btn-sm category-filter active" data-category="all">All</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm category-filter active" data-category="all">All</button>
                     @foreach($categories as $category)
-                    <button class="btn btn-outline-primary btn-sm category-filter" data-category="{{ $category->id }}">{{ $category->name }}</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm category-filter" data-category="{{ $category->id }}" data-area="{{ $category->salesArea() }}">{{ $category->name }}</button>
                     @endforeach
                 </div>
                 <div class="product-grid" id="products-container">
@@ -132,7 +147,8 @@
                         <div class="product-card border" data-product-id="{{ $product->id }}" 
                              data-product-name="{{ $product->name }}" 
                              data-product-price="{{ $product->selling_price }}"
-                             data-category-id="{{ $category->id }}">
+                             data-category-id="{{ $category->id }}"
+                             data-area="{{ $category->salesArea() }}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong>{{ $product->name }}</strong>
@@ -289,31 +305,66 @@ function clearCart() {
     }
 }
 
-// Product search
-document.getElementById('product-search').addEventListener('input', function(e) {
-    const search = e.target.value.toLowerCase();
-    document.querySelectorAll('.product-card').forEach(card => {
-        const name = card.getAttribute('data-product-name').toLowerCase();
-        card.style.display = name.includes(search) ? 'block' : 'none';
-    });
-});
+let currentCategory = 'all';
 
-// Category filter
+function selectedDepartment() {
+    return document.querySelector('input[name="department"]:checked')?.value || 'general';
+}
+
+function matchesDepartment(el) {
+    const department = selectedDepartment();
+    return department === 'general' || el.getAttribute('data-area') === department;
+}
+
+function applyFilters() {
+    const search = document.getElementById('product-search').value.toLowerCase();
+
+    document.querySelectorAll('.category-filter[data-area]').forEach(btn => {
+        btn.style.display = matchesDepartment(btn) ? '' : 'none';
+    });
+
+    document.querySelectorAll('.product-card').forEach(card => {
+        const visible = matchesDepartment(card)
+            && (currentCategory === 'all' || card.getAttribute('data-category-id') === currentCategory)
+            && card.getAttribute('data-product-name').toLowerCase().includes(search);
+        card.style.display = visible ? 'block' : 'none';
+    });
+}
+
+function applyDepartment() {
+    const activeBtn = document.querySelector(`.category-filter[data-category="${currentCategory}"]`);
+    if (activeBtn && activeBtn.dataset.area && !matchesDepartment(activeBtn)) {
+        document.querySelectorAll('.category-filter').forEach(b => b.classList.remove('active'));
+        document.querySelector('.category-filter[data-category="all"]').classList.add('active');
+        currentCategory = 'all';
+    }
+
+    if (cart.length > 0) {
+        const outside = cart.filter(item => {
+            const card = document.querySelector(`.product-card[data-product-id="${item.product_id}"]`);
+            return card && !matchesDepartment(card);
+        });
+        if (outside.length && confirm(`${outside.length} item(s) in the cart are not in this department. Remove them?`)) {
+            const ids = outside.map(item => item.product_id);
+            cart = cart.filter(item => !ids.includes(item.product_id));
+            renderCart();
+            updateFormFields();
+        }
+    }
+    applyFilters();
+}
+
+document.getElementById('product-search').addEventListener('input', applyFilters);
+
 document.querySelectorAll('.category-filter').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.category-filter').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
-        
-        const categoryId = this.getAttribute('data-category');
-        document.querySelectorAll('.product-card').forEach(card => {
-            if (categoryId === 'all') {
-                card.style.display = 'block';
-            } else {
-                const cardCategoryId = card.getAttribute('data-category-id');
-                card.style.display = cardCategoryId === categoryId ? 'block' : 'none';
-            }
-        });
+        currentCategory = this.getAttribute('data-category');
+        applyFilters();
     });
 });
+
+applyFilters();
 </script>
 @endpush

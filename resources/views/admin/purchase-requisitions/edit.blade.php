@@ -26,6 +26,18 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Department <span class="text-danger">*</span></label>
+                        <select name="department" class="form-select @error('department') is-invalid @enderror" required>
+                            @foreach(\App\Models\PurchaseRequisition::DEPARTMENTS as $key => $label)
+                            <option value="{{ $key }}" @selected(old('department', $purchaseRequisition->department) === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('department')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">PR Date <span class="text-danger">*</span></label>
                         <input type="date" name="pr_date" class="form-control @error('pr_date') is-invalid @enderror" 
                                value="{{ old('pr_date', $purchaseRequisition->pr_date->format('Y-m-d')) }}" required>

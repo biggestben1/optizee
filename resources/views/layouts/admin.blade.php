@@ -210,6 +210,12 @@
                                 </a>
                             </li>
                             <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.hall-rentals.*') ? 'active' : '' }}" href="{{ route('admin.hall-rentals.index') }}">
+                                    <i class="side-menu__icon fe fe-star"></i>
+                                    <span class="side-menu__label">Hall Rentals</span>
+                                </a>
+                            </li>
+                            <li class="slide">
                                 <a class="side-menu__item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}">
                                     <i class="side-menu__icon fe fe-bar-chart-2"></i>
                                     <span class="side-menu__label">Reports</span>
@@ -236,6 +242,12 @@
                                 <a class="side-menu__item {{ request()->routeIs('admin.hotel-pos.*') ? 'active' : '' }}" href="{{ route('admin.hotel-pos.index') }}">
                                     <i class="side-menu__icon fe fe-home"></i>
                                     <span class="side-menu__label">Hotel POS</span>
+                                </a>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.hall-rentals.*') ? 'active' : '' }}" href="{{ route('admin.hall-rentals.index') }}">
+                                    <i class="side-menu__icon fe fe-star"></i>
+                                    <span class="side-menu__label">Hall Rentals</span>
                                 </a>
                             </li>
                             @endif
@@ -298,11 +310,38 @@
                                     <span class="side-menu__label">Reports</span>
                                 </a>
                             </li>
-                            @if(auth()->user()->is_admin || auth()->user()->isManager())
+                            @if(auth()->user()->canViewFinancialReports())
                             <li class="slide">
-                                <a class="side-menu__item {{ request()->routeIs('admin.purchase-requisitions.*') ? 'active' : '' }}" href="{{ route('admin.purchase-requisitions.index') }}">
+                                <a class="side-menu__item {{ request()->routeIs('admin.reports.cumulative') ? 'active' : '' }}" href="{{ route('admin.reports.cumulative') }}">
+                                    <i class="side-menu__icon fe fe-pie-chart"></i>
+                                    <span class="side-menu__label">Cumulative Report</span>
+                                </a>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}" href="{{ route('admin.refunds.index') }}">
+                                    <i class="side-menu__icon fe fe-rotate-ccw"></i>
+                                    <span class="side-menu__label">Refunds</span>
+                                </a>
+                            </li>
+                            @endif
+                            @if(auth()->user()->is_admin || auth()->user()->isManager())
+                            @php $prDepartment = request()->routeIs('admin.purchase-requisitions.*') ? request('department') : null; @endphp
+                            <li class="slide">
+                                <a class="side-menu__item {{ $prDepartment === 'bar' ? 'active' : '' }}" href="{{ route('admin.purchase-requisitions.index', ['department' => 'bar']) }}">
                                     <i class="side-menu__icon fe fe-file-text"></i>
-                                    <span class="side-menu__label">Purchase Requisitions</span>
+                                    <span class="side-menu__label">Bar Purchases</span>
+                                </a>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ $prDepartment === 'kitchen' ? 'active' : '' }}" href="{{ route('admin.purchase-requisitions.index', ['department' => 'kitchen']) }}">
+                                    <i class="side-menu__icon fe fe-file-text"></i>
+                                    <span class="side-menu__label">Kitchen Purchases</span>
+                                </a>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ request()->routeIs('admin.purchase-requisitions.*') && !in_array($prDepartment, ['bar', 'kitchen'], true) ? 'active' : '' }}" href="{{ route('admin.purchase-requisitions.index') }}">
+                                    <i class="side-menu__icon fe fe-file-text"></i>
+                                    <span class="side-menu__label">All Requisitions</span>
                                 </a>
                             </li>
                             <li class="slide">

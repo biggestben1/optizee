@@ -159,6 +159,23 @@
                                 <td><strong>Payment Method:</strong></td>
                                 <td class="text-end"><strong>{{ strtoupper($roomBooking->payment_method) }}</strong></td>
                             </tr>
+                            @if($roomBooking->payment_method === 'mixed')
+                            @php
+                                $splitRows = [
+                                    'Cash' => (float) $roomBooking->cash_amount + (float) $roomBooking->change,
+                                    'Transfer' => (float) $roomBooking->transfer_amount,
+                                    'POS' => (float) $roomBooking->pos_amount,
+                                ];
+                            @endphp
+                            @foreach($splitRows as $label => $value)
+                            @if($value > 0)
+                            <tr>
+                                <td class="ps-4">{{ $label }}:</td>
+                                <td class="text-end">₦{{ number_format($value, 2) }}</td>
+                            </tr>
+                            @endif
+                            @endforeach
+                            @endif
                         </tbody>
                     </table>
                 </div>

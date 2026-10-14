@@ -12,6 +12,12 @@ class Category extends Model
 {
     use HasFactory;
 
+    /**
+     * Category names containing any of these words are treated as kitchen (food);
+     * everything else in Bar n Kitchen is treated as bar.
+     */
+    public const KITCHEN_KEYWORDS = ['food', 'kitchen', 'meal', 'dish', 'main', 'appetizer', 'starter', 'soup', 'salad', 'dessert', 'breakfast', 'lunch', 'dinner', 'snack'];
+
     protected $fillable = [
         'name',
         'slug',
@@ -74,6 +80,37 @@ class Category extends Model
     public function isSubcategory(): bool
     {
         return $this->parent_id !== null;
+    }
+
+    public function isKitchenCategory(): bool
+    {
+        foreach ([$this->name, $this->parent?->name] as $name) {
+            if ($name && Str::contains(strtolower($name), self::KITCHEN_KEYWORDS)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 'kitchen', 'bar' or 'hotel' (hotel consumables).
+     */
+    public function salesArea(): string
+    {
+        if ($this->department === 'hotel') {
+            return 'hotel';
+        }
+
+        return $this->isKitchenCategory() ? 'kitchen' : 'bar';
+    }
+
+    public static function kitchenCategoryIds(): array
+    {
+        return static::with('parent')->get()
+            ->filter(fn (Category $category) => $category->isKitchenCategory())
+            ->pluck('id')
+            ->all();
     }
 
     public function getFullNameAttribute(): string

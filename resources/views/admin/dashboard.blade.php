@@ -190,6 +190,25 @@
                             <i class="fe fe-bar-chart-2 me-2"></i> Daily Report
                         </a>
                     </div>
+                    @if(auth()->user()->canViewFinancialReports())
+                    <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <a href="{{ route('admin.reports.cumulative') }}" class="btn btn-dark btn-lg w-100">
+                            <i class="fe fe-pie-chart me-2"></i> Cumulative Report
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <a href="{{ route('admin.refunds.create') }}" class="btn btn-danger btn-lg w-100">
+                            <i class="fe fe-rotate-ccw me-2"></i> Record Refund
+                        </a>
+                    </div>
+                    @endif
+                    @if(!$isCashier)
+                    <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <a href="{{ route('admin.hall-rentals.create') }}" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="fe fe-star me-2"></i> Hall Rental
+                        </a>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

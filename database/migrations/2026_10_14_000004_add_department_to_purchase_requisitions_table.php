@@ -1,0 +1,24 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('purchase_requisitions', function (Blueprint $table) {
+            $table->string('department', 20)->default('general')->after('pr_date'); // bar, kitchen, hotel, general
+            $table->index('department');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('purchase_requisitions', function (Blueprint $table) {
+            $table->dropIndex(['department']);
+            $table->dropColumn('department');
+        });
+    }
+};

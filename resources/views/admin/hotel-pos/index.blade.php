@@ -15,11 +15,16 @@
                     <h4 class="card-title mb-0">
                         <i class="fe fe-home me-2"></i>Hotel Room Booking
                     </h4>
-                    @if(!auth()->user()->isReceptionist())
-                    <a href="{{ route('admin.rooms.index') }}" class="btn btn-outline-primary">
-                        <i class="fe fe-arrow-left me-2"></i>Back to Rooms
-                    </a>
-                    @endif
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('admin.hall-rentals.create') }}" class="btn btn-primary">
+                            <i class="fe fe-star me-2"></i>Hall Rental
+                        </a>
+                        @if(!auth()->user()->isReceptionist())
+                        <a href="{{ route('admin.rooms.index') }}" class="btn btn-outline-primary">
+                            <i class="fe fe-arrow-left me-2"></i>Back to Rooms
+                        </a>
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -223,11 +228,37 @@
                                     <option value="transfer">Transfer</option>
                                     <option value="pos">POS</option>
                                     <option value="credit">Credit</option>
-                                    <option value="mixed">Mixed</option>
+                                    <option value="mixed">Mixed (Cash + Transfer / POS)</option>
                                 </select>
                             </div>
 
-                            <div class="mb-3">
+                            <div id="mixed-payment-fields" class="mb-3 p-3 border border-primary rounded bg-light" style="display: none;">
+                                <label class="form-label fw-semibold mb-2">Split Payment <span class="text-danger">*</span></label>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small mb-1">Cash Paid (₦)</label>
+                                        <input type="number" id="mixed-cash" class="form-control" min="0" step="0.01" value="0" oninput="updateMixedTotal()">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small mb-1">Transfer Made (₦)</label>
+                                        <input type="number" id="mixed-transfer" class="form-control" min="0" step="0.01" value="0" oninput="updateMixedTotal()">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small mb-1">POS (₦)</label>
+                                        <input type="number" id="mixed-pos" class="form-control" min="0" step="0.01" value="0" oninput="updateMixedTotal()">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-3">
+                                    <span>Total Entered:</span>
+                                    <strong id="mixed-entered">₦0.00</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Balance Remaining:</span>
+                                    <strong id="mixed-remaining" class="text-danger">₦0.00</strong>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="room-amount-paid-group">
                                 <label class="form-label">Amount Paid <span class="text-danger">*</span></label>
                                 <input type="text" id="room-amount-paid" class="form-control" placeholder="Auto-fills with total" oninput="formatAmountPaid(this)" onblur="formatAmountPaid(this)" onclick="autoFillRoomAmountPaid(true)" required>
                             </div>
@@ -349,9 +380,14 @@ function toggleCreditPaymentUi() {
     }
 
     const isCredit = paymentMethod.value === 'credit';
-    const amountPaidGroup = amountPaidInput.closest('.mb-3');
+    const isMixed = paymentMethod.value === 'mixed';
+    const amountPaidGroup = document.getElementById('room-amount-paid-group');
+    const mixedFields = document.getElementById('mixed-payment-fields');
     if (amountPaidGroup) {
-        amountPaidGroup.style.display = isCredit ? 'none' : 'block';
+        amountPaidGroup.style.display = (isCredit || isMixed) ? 'none' : 'block';
+    }
+    if (mixedFields) {
+        mixedFields.style.display = isMixed ? 'block' : 'none';
     }
 
     if (isCredit) {
@@ -360,9 +396,40 @@ function toggleCreditPaymentUi() {
         if (changeEl) {
             changeEl.textContent = '₦0.00';
         }
+    } else if (isMixed) {
+        updateMixedTotal();
     } else {
+        amountPaidManuallyEdited = false;
         autoFillRoomAmountPaid();
     }
+}
+
+function isMixedPayment() {
+    return document.getElementById('room-payment-method')?.value === 'mixed';
+}
+
+function getMixedAmounts() {
+    return {
+        cash: parseFloat(document.getElementById('mixed-cash').value) || 0,
+        transfer: parseFloat(document.getElementById('mixed-transfer').value) || 0,
+        pos: parseFloat(document.getElementById('mixed-pos').value) || 0,
+    };
+}
+
+function updateMixedTotal() {
+    const total = parseFloat(document.getElementById('room-total').textContent.replace(/[₦,]/g, '')) || 0;
+    const amounts = getMixedAmounts();
+    const entered = amounts.cash + amounts.transfer + amounts.pos;
+    const remaining = Math.max(0, total - entered);
+
+    document.getElementById('mixed-entered').textContent = `₦${entered.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
+    const remainingEl = document.getElementById('mixed-remaining');
+    remainingEl.textContent = `₦${remaining.toLocaleString('en-NG', {minimumFractionDigits: 2})}`;
+    remainingEl.classList.toggle('text-danger', remaining > 0);
+    remainingEl.classList.toggle('text-success', remaining === 0);
+
+    document.getElementById('room-amount-paid').value = formatPaidNumber(entered);
+    calculateRoomChange();
 }
 
 function onHourlyRateChange() {
@@ -620,6 +687,11 @@ function autoFillRoomAmountPaid(forceEmptyOnly = false) {
         return;
     }
 
+    if (isMixedPayment()) {
+        updateMixedTotal();
+        return;
+    }
+
     const total = parseFloat(document.getElementById('room-total').textContent.replace(/[₦,]/g, '')) || 0;
     const isEmpty = !input.value || input.value.trim() === '';
 
@@ -757,9 +829,28 @@ function processRoomBooking() {
     formDataObj.append('service_charge', parseFloat(document.getElementById('room-service-charge').value) || 0);
     formDataObj.append('payment_method', paymentMethod);
 
-    const amountPaidValue = paymentMethod === 'credit'
+    let amountPaidValue = paymentMethod === 'credit'
         ? 0
         : (parseFloat(document.getElementById('room-amount-paid').value.replace(/[,]/g, '')) || 0);
+
+    if (paymentMethod === 'mixed') {
+        const amounts = getMixedAmounts();
+        const roomTotal = parseFloat(document.getElementById('room-total').textContent.replace(/[₦,]/g, '')) || 0;
+        const partsUsed = [amounts.cash, amounts.transfer, amounts.pos].filter(v => v > 0).length;
+        amountPaidValue = amounts.cash + amounts.transfer + amounts.pos;
+
+        if (partsUsed < 2) {
+            alert('For a mixed payment, enter at least two amounts (e.g. Cash and Transfer).');
+            return;
+        }
+        if (amountPaidValue < roomTotal) {
+            alert('Cash + Transfer + POS is less than the total. Balance remaining: ₦' + (roomTotal - amountPaidValue).toLocaleString('en-NG', {minimumFractionDigits: 2}));
+            return;
+        }
+        formDataObj.append('mixed_cash', amounts.cash);
+        formDataObj.append('mixed_transfer', amounts.transfer);
+        formDataObj.append('mixed_pos', amounts.pos);
+    }
     formDataObj.append('amount_paid', amountPaidValue);
     formDataObj.append('notes', document.getElementById('room-notes').value);
     const suiteSelected = document.getElementById('room-category-select').selectedOptions[0]?.dataset.isSuite === '1';
@@ -892,6 +983,10 @@ function clearRoomBooking() {
     document.getElementById('hourly-rate').value = '';
     document.getElementById('room-amount-paid').value = '';
     amountPaidManuallyEdited = false;
+    document.getElementById('room-payment-method').value = 'cash';
+    ['mixed-cash', 'mixed-transfer', 'mixed-pos'].forEach(id => {
+        document.getElementById(id).value = '0';
+    });
     document.getElementById('room-discount').value = '0';
     document.getElementById('room-tax').value = '0';
     document.getElementById('room-service-charge').value = '0';

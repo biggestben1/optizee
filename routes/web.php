@@ -17,6 +17,8 @@ use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\StaffAssignmentController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\HotelPOSController;
+use App\Http\Controllers\Admin\HallRentalController;
+use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\Admin\RoomBookingController;
 use App\Http\Controllers\Admin\RoomCategoryController;
 use App\Http\Controllers\Admin\RoomController;
@@ -142,6 +144,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/reports/profit', [ReportController::class, 'profit'])->name('reports.profit');
     Route::get('/reports/daily', [ReportController::class, 'daily'])->name('reports.daily');
     Route::get('/reports/hotel-bookings', [ReportController::class, 'hotelBookings'])->name('reports.hotel-bookings');
+    Route::get('/reports/cumulative', [ReportController::class, 'cumulative'])->name('reports.cumulative');
 
     // Report Exports
     Route::get('/reports/daily/export', [ReportController::class, 'exportDaily'])->name('reports.export.daily');
@@ -209,6 +212,22 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/room-bookings/{roomBooking}/cancel', [RoomBookingController::class, 'cancel'])->name('room-bookings.cancel');
     Route::get('/room-bookings/{roomBooking}/receipt', [RoomBookingController::class, 'receipt'])->name('room-bookings.receipt');
 
+    // Hall Rentals
+    Route::get('/hall-rentals', [HallRentalController::class, 'index'])->name('hall-rentals.index');
+    Route::get('/hall-rentals/create', [HallRentalController::class, 'create'])->name('hall-rentals.create');
+    Route::post('/hall-rentals', [HallRentalController::class, 'store'])->name('hall-rentals.store');
+    Route::post('/hall-rentals/occasions', [HallRentalController::class, 'storeOccasion'])->name('hall-rentals.occasions.store');
+    Route::put('/hall-rentals/occasions/{hallOccasion}', [HallRentalController::class, 'updateOccasion'])->name('hall-rentals.occasions.update');
+    Route::delete('/hall-rentals/occasions/{hallOccasion}', [HallRentalController::class, 'destroyOccasion'])->name('hall-rentals.occasions.destroy');
+    Route::get('/hall-rentals/{hallBooking}', [HallRentalController::class, 'show'])->name('hall-rentals.show');
+    Route::post('/hall-rentals/{hallBooking}/cancel', [HallRentalController::class, 'cancel'])->name('hall-rentals.cancel');
+
+    // Refunds
+    Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
+    Route::get('/refunds/create', [RefundController::class, 'create'])->name('refunds.create');
+    Route::post('/refunds', [RefundController::class, 'store'])->name('refunds.store');
+    Route::delete('/refunds/{refund}', [RefundController::class, 'destroy'])->name('refunds.destroy');
+
     // Purchase Requisitions
     Route::resource('purchase-requisitions', PurchaseRequisitionController::class)->parameters([
         'purchase-requisitions' => 'purchaseRequisition'
@@ -240,6 +259,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/go-live/clear-orders', [GoLiveController::class, 'clearOrders'])->name('go-live.clear-orders');
     Route::post('/go-live/clear-customers', [GoLiveController::class, 'clearCustomers'])->name('go-live.clear-customers');
     Route::post('/go-live/clear-all', [GoLiveController::class, 'clearAll'])->name('go-live.clear-all');
+    Route::post('/go-live/bookings/delete-up-to', [GoLiveController::class, 'deleteBookingsUpTo'])->name('go-live.bookings.delete-up-to');
+    Route::post('/go-live/bookings/delete-all', [GoLiveController::class, 'deleteAllBookings'])->name('go-live.bookings.delete-all');
+    Route::post('/go-live/bookings/{roomBooking}/cancel', [GoLiveController::class, 'cancelBooking'])->name('go-live.bookings.cancel');
+    Route::delete('/go-live/bookings/{roomBooking}', [GoLiveController::class, 'deleteBooking'])->name('go-live.bookings.delete');
 
     // Cloud Footer
     Route::get('/cloud-footer', [CloudFooterController::class, 'edit'])->name('cloud-footer.edit');

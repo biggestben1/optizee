@@ -8,6 +8,7 @@ use App\Models\RoomBooking;
 use App\Models\RoomCategory;
 use App\Models\Customer;
 use App\Models\AuditLog;
+use App\Support\PaymentSplit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -55,6 +56,9 @@ class RoomBookingController extends Controller
             'service_charge' => 'nullable|numeric|min:0',
             'payment_method' => 'required|in:cash,transfer,pos,credit,mixed',
             'amount_paid' => 'required|numeric|min:0',
+            'mixed_cash' => 'nullable|numeric|min:0',
+            'mixed_transfer' => 'nullable|numeric|min:0',
+            'mixed_pos' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'is_full_suite_booking' => 'nullable|boolean',
         ]);
@@ -171,8 +175,16 @@ class RoomBookingController extends Controller
             $tax = $validated['tax'] ?? 0;
             $serviceCharge = $validated['service_charge'] ?? 0;
             $total = $subtotal - $discount + $tax + $serviceCharge;
-            $amountPaid = $validated['amount_paid'];
-            $change = max(0, $amountPaid - $total);
+            $payment = PaymentSplit::resolve(
+                $validated['payment_method'],
+                (float) $total,
+                (float) $validated['amount_paid'],
+                [
+                    'cash' => $validated['mixed_cash'] ?? 0,
+                    'transfer' => $validated['mixed_transfer'] ?? 0,
+                    'pos' => $validated['mixed_pos'] ?? 0,
+                ]
+            );
 
             // Handle guest ID upload
             $guestIdPath = null;
@@ -213,8 +225,11 @@ class RoomBookingController extends Controller
                 'tax' => $tax,
                 'service_charge' => $serviceCharge,
                 'total' => $total,
-                'amount_paid' => $amountPaid,
-                'change' => $change,
+                'amount_paid' => $payment['amount_paid'],
+                'change' => $payment['change'],
+                'cash_amount' => $payment['cash_amount'],
+                'transfer_amount' => $payment['transfer_amount'],
+                'pos_amount' => $payment['pos_amount'],
                 'payment_method' => $validated['payment_method'],
                 'status' => 'confirmed',
                 'is_credit_booking' => $validated['payment_method'] === 'credit',

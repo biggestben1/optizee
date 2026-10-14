@@ -87,7 +87,7 @@
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card">
             <div class="card-header">
                 <h4 class="card-title mb-0">Sales Breakdown</h4>
@@ -127,20 +127,42 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h4 class="card-title mb-0">Daily Sales Summary</h4>
+                <h4 class="card-title mb-0">Daily Breakdown</h4>
             </div>
-            <div class="card-body" style="max-height: 200px; overflow-y: auto;">
-                @forelse($dailySales->sortKeysDesc() as $date => $data)
-                <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
-                    <span>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }} ({{ $data['count'] }} sales)</span>
-                    <strong>₦{{ number_format($data['total'], 2) }}</strong>
-                </div>
-                @empty
-                <p class="text-muted text-center mb-0">No sales data</p>
-                @endforelse
+            <div class="card-body" style="max-height: 320px; overflow-y: auto;">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th class="text-center">Sales</th>
+                            <th class="text-end">Cash</th>
+                            <th class="text-end">Transfer</th>
+                            <th class="text-end">POS</th>
+                            <th class="text-end">Credit</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($dailySales->sortKeysDesc() as $date => $data)
+                        <tr>
+                            <td>{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</td>
+                            <td class="text-center">{{ $data['count'] }}</td>
+                            <td class="text-end text-success fw-semibold">₦{{ number_format($data['cash'], 2) }}</td>
+                            <td class="text-end">₦{{ number_format($data['transfer'], 2) }}</td>
+                            <td class="text-end">₦{{ number_format($data['pos'], 2) }}</td>
+                            <td class="text-end">₦{{ number_format($data['credit'], 2) }}</td>
+                            <td class="text-end fw-bold">₦{{ number_format($data['total'], 2) }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="text-muted text-center">No sales data</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

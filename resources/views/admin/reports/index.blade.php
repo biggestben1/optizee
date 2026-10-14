@@ -8,6 +8,18 @@
 
 @section('content')
 <div class="row">
+    @if(auth()->user()->canViewFinancialReports())
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="fe fe-pie-chart text-primary mb-3" style="font-size: 40px;"></i>
+                <h4>Cumulative Report</h4>
+                <p class="text-muted">All hotel income in one place: rooms, hall, bar and kitchen, with charts</p>
+                <a href="{{ route('admin.reports.cumulative') }}" class="btn btn-primary">View Report</a>
+            </div>
+        </div>
+    </div>
+    @endif
     @if(!auth()->user()->isReceptionist())
     <div class="col-lg-4 col-md-6 mb-4">
         <div class="card">

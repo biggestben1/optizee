@@ -49,6 +49,7 @@ class AdminMiddleware
                 $allowedPrefixes = [
                     'admin.hotel-pos.',
                     'admin.room-bookings.',
+                    'admin.hall-rentals.',
                 ];
                 $allowedRoutes = [
                     'admin.reports.index',

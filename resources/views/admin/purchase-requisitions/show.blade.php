@@ -19,6 +19,7 @@
                     <div class="col-md-6">
                         <label class="text-muted small">PR Number</label>
                         <p class="mb-0 fw-bold">{{ $purchaseRequisition->pr_number }}</p>
+                        <span class="badge bg-primary mt-1">{{ $purchaseRequisition->department_label }} Purchase</span>
                     </div>
                     <div class="col-md-6">
                         <label class="text-muted small">Date</label>
