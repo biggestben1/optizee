@@ -665,6 +665,8 @@ class ReportController extends Controller
             'areas' => array_fill_keys(array_keys($areas), 0.0),
             'channels' => array_fill_keys(array_keys($channels), 0.0),
             'refunds' => array_fill_keys(array_keys(Refund::PAYMENT_METHODS), 0.0),
+            'discount_allowed' => 0.0,
+            'discount_received' => 0.0,
         ];
 
         $days = [];
@@ -674,6 +676,8 @@ class ReportController extends Controller
         $areaChannels = array_fill_keys(array_keys($areas), array_fill_keys(array_keys($channels), 0.0));
         $areaRefunds = array_fill_keys(array_keys(Refund::AREAS), 0.0);
         $counts = array_fill_keys(array_keys($areas), 0);
+        $areaDiscountsAllowed = array_fill_keys(array_keys($areas), 0.0);
+        $areaDiscountsReceived = array_fill_keys(array_merge(array_keys($areas), ['other']), 0.0);
 
         $record = function (string $date, string $area, float $amount, array $split) use (&$days, &$areaChannels) {
             $days[$date]['areas'][$area] += $amount;
@@ -683,35 +687,54 @@ class ReportController extends Controller
             }
         };
 
+        // Income is already recorded after these discounts; they are shown for information.
+        $allowDiscount = function (string $date, string $area, float $amount) use (&$days, &$areaDiscountsAllowed) {
+            if ($amount <= 0) {
+                return;
+            }
+            $days[$date]['discount_allowed'] += $amount;
+            $areaDiscountsAllowed[$area] += $amount;
+        };
+
         $withOutstanding = function (float $total, array $split): array {
             $split['outstanding'] = max(0, round($total - array_sum($split), 2));
             return $split;
         };
 
         RoomBooking::notCancelled()->whereBetween('created_at', $range)->get()
-            ->each(function (RoomBooking $booking) use ($record, $withOutstanding, &$counts) {
+            ->each(function (RoomBooking $booking) use ($record, $allowDiscount, $withOutstanding, &$counts) {
                 $counts['rooms']++;
                 $total = (float) $booking->total;
-                $record($booking->created_at->format('Y-m-d'), 'rooms', $total, $withOutstanding($total, $booking->paymentBreakdown()));
+                $date = $booking->created_at->format('Y-m-d');
+                $record($date, 'rooms', $total, $withOutstanding($total, $booking->paymentBreakdown()));
+                $allowDiscount($date, 'rooms', (float) $booking->discount);
             });
 
         HallBooking::notCancelled()->whereBetween('created_at', $range)->get()
-            ->each(function ($booking) use ($record, $withOutstanding, &$counts) {
+            ->each(function ($booking) use ($record, $allowDiscount, $withOutstanding, &$counts) {
                 $counts['hall']++;
                 $total = (float) $booking->total;
-                $record($booking->created_at->format('Y-m-d'), 'hall', $total, $withOutstanding($total, $booking->paymentBreakdown()));
+                $date = $booking->created_at->format('Y-m-d');
+                $record($date, 'hall', $total, $withOutstanding($total, $booking->paymentBreakdown()));
+                $allowDiscount($date, 'hall', (float) $booking->discount);
             });
 
         $kitchenCategoryIds = Category::kitchenCategoryIds();
         Sale::completed()->whereBetween('created_at', $range)->with('items.product:id,category_id')->get()
-            ->each(function (Sale $sale) use ($record, $kitchenCategoryIds, &$counts) {
+            ->each(function (Sale $sale) use ($record, $allowDiscount, $kitchenCategoryIds, &$counts) {
                 $total = (float) $sale->total;
                 $itemsTotal = (float) $sale->items->sum('total');
-                $kitchenItems = (float) $sale->items
-                    ->filter(fn ($item) => $item->product && in_array($item->product->category_id, $kitchenCategoryIds))
-                    ->sum('total');
-                $kitchenShare = $itemsTotal > 0 ? round($total * $kitchenItems / $itemsTotal, 2) : 0.0;
+                $kitchenSaleItems = $sale->items
+                    ->filter(fn ($item) => $item->product && in_array($item->product->category_id, $kitchenCategoryIds));
+                $kitchenItems = (float) $kitchenSaleItems->sum('total');
+                $kitchenRatio = $itemsTotal > 0 ? $kitchenItems / $itemsTotal : 0.0;
+                $kitchenShare = round($total * $kitchenRatio, 2);
                 $barShare = $total - $kitchenShare;
+
+                $orderDiscount = (float) $sale->discount;
+                $kitchenOrderDiscount = round($orderDiscount * $kitchenRatio, 2);
+                $kitchenItemDiscount = (float) $kitchenSaleItems->sum('discount');
+                $barItemDiscount = (float) $sale->items->sum('discount') - $kitchenItemDiscount;
 
                 $channel = match (true) {
                     (bool) $sale->is_credit_sale => 'credit',
@@ -728,6 +751,21 @@ class ReportController extends Controller
                     $counts['kitchen']++;
                     $record($date, 'kitchen', $kitchenShare, [$channel => $kitchenShare]);
                 }
+                $allowDiscount($date, 'bar', $barItemDiscount + $orderDiscount - $kitchenOrderDiscount);
+                $allowDiscount($date, 'kitchen', $kitchenItemDiscount + $kitchenOrderDiscount);
+            });
+
+        PurchaseRequisition::where('status', '!=', 'rejected')
+            ->where('discount_received', '>', 0)
+            ->whereBetween('pr_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get()
+            ->each(function (PurchaseRequisition $pr) use (&$days, &$areaDiscountsReceived) {
+                $area = PurchaseRequisition::REPORT_AREAS[$pr->department] ?? 'other';
+                $date = $pr->pr_date->format('Y-m-d');
+                if (isset($days[$date])) {
+                    $days[$date]['discount_received'] += (float) $pr->discount_received;
+                }
+                $areaDiscountsReceived[$area] += (float) $pr->discount_received;
             });
 
         $refunds = Refund::whereBetween('refund_date', [$startDate->toDateString(), $endDate->toDateString()])->get();
@@ -742,7 +780,7 @@ class ReportController extends Controller
         foreach ($days as &$row) {
             $row['gross'] = array_sum($row['areas']);
             $row['refund_total'] = array_sum($row['refunds']);
-            $row['net'] = $row['gross'] - $row['refund_total'];
+            $row['net'] = $row['gross'] - $row['refund_total'] + $row['discount_received'];
             $row['cash_at_hand'] = $row['channels']['cash'] - $row['refunds']['cash'];
         }
         unset($row);
@@ -754,10 +792,12 @@ class ReportController extends Controller
                     $totals[$group][$key] += $value;
                 }
             }
+            $totals['discount_allowed'] += $row['discount_allowed'];
+            $totals['discount_received'] += $row['discount_received'];
         }
         $totals['gross'] = array_sum($totals['areas']);
         $totals['refund_total'] = array_sum($totals['refunds']);
-        $totals['net'] = $totals['gross'] - $totals['refund_total'];
+        $totals['net'] = $totals['gross'] - $totals['refund_total'] + $totals['discount_received'];
         $totals['cash_at_hand'] = $totals['channels']['cash'] - $totals['refunds']['cash'];
 
         $chart = [
@@ -784,7 +824,7 @@ class ReportController extends Controller
 
         return view('admin.reports.cumulative', compact(
             'startDate', 'endDate', 'areas', 'channels', 'days', 'totals',
-            'areaChannels', 'areaRefunds', 'counts', 'chart'
+            'areaChannels', 'areaRefunds', 'counts', 'chart', 'areaDiscountsAllowed', 'areaDiscountsReceived'
         ));
     }
 

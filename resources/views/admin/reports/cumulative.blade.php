@@ -24,6 +24,8 @@
         'This Month' => [today()->startOfMonth(), today()],
     ];
     $otherRefunds = $areaRefunds['other'] ?? 0;
+    $otherDiscountReceived = $areaDiscountsReceived['other'] ?? 0;
+    $money = fn ($value, $prefix = '') => $value > 0 ? $prefix . '₦' . number_format($value, 2) : '-';
 @endphp
 
 <div class="card mb-4 no-print">
@@ -53,7 +55,7 @@
 <h4 class="mb-3">All Hotel Income &mdash; {{ $periodLabel }}</h4>
 
 <div class="row mb-2">
-    <div class="col-xl-2 col-md-4 col-6 mb-3">
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
         <div class="card bg-primary text-white h-100">
             <div class="card-body">
                 <h6 class="text-white-50 mb-1">Gross Income</h6>
@@ -61,7 +63,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-2 col-md-4 col-6 mb-3">
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
         <div class="card bg-danger text-white h-100">
             <div class="card-body">
                 <h6 class="text-white-50 mb-1">Refunds</h6>
@@ -69,7 +71,25 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-2 col-md-4 col-6 mb-3">
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
+        <div class="card border-warning h-100">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Discount Allowed</h6>
+                <h4 class="mb-0 text-warning">₦{{ number_format($totals['discount_allowed'], 2) }}</h4>
+                <small class="text-muted">given to customers</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
+        <div class="card border-success h-100">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Discount Received</h6>
+                <h4 class="mb-0 text-success">+₦{{ number_format($totals['discount_received'], 2) }}</h4>
+                <small class="text-muted">from suppliers</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
         <div class="card bg-dark text-white h-100">
             <div class="card-body">
                 <h6 class="text-white-50 mb-1">Net Income</h6>
@@ -77,7 +97,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-2 col-md-4 col-6 mb-3">
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
         <div class="card bg-success text-white h-100">
             <div class="card-body">
                 <h6 class="text-white-50 mb-1">Cash at Hand</h6>
@@ -88,7 +108,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-2 col-md-4 col-6 mb-3">
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
         <div class="card bg-info text-white h-100">
             <div class="card-body">
                 <h6 class="text-white-50 mb-1">Transfer</h6>
@@ -96,7 +116,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-2 col-md-4 col-6 mb-3">
+    <div class="col-xl-3 col-md-4 col-6 mb-3">
         <div class="card bg-warning text-white h-100">
             <div class="card-body">
                 <h6 class="text-white-50 mb-1">POS</h6>
@@ -123,7 +143,9 @@
                         <th class="text-end">Credit</th>
                         <th class="text-end">Other</th>
                         <th class="text-end">Gross</th>
+                        <th class="text-end" title="Already taken off the income figures">Discount Allowed</th>
                         <th class="text-end">Refunds</th>
+                        <th class="text-end">Discount Received</th>
                         <th class="text-end">Net</th>
                     </tr>
                 </thead>
@@ -132,6 +154,7 @@
                     @php
                         $split = $areaChannels[$key];
                         $refund = $areaRefunds[$key] ?? 0;
+                        $received = $areaDiscountsReceived[$key] ?? 0;
                     @endphp
                     <tr>
                         <td><strong>{{ $label }}</strong></td>
@@ -142,16 +165,19 @@
                         <td class="text-end">₦{{ number_format($split['credit'], 2) }}</td>
                         <td class="text-end" title="Mixed payments not split + unpaid balances">₦{{ number_format($split['unsplit'] + $split['outstanding'], 2) }}</td>
                         <td class="text-end fw-bold">₦{{ number_format($totals['areas'][$key], 2) }}</td>
-                        <td class="text-end text-danger">{{ $refund > 0 ? '-₦' . number_format($refund, 2) : '-' }}</td>
-                        <td class="text-end fw-bold">₦{{ number_format($totals['areas'][$key] - $refund, 2) }}</td>
+                        <td class="text-end text-warning">{{ $money($areaDiscountsAllowed[$key] ?? 0) }}</td>
+                        <td class="text-end text-danger">{{ $money($refund, '-') }}</td>
+                        <td class="text-end text-success">{{ $money($received, '+') }}</td>
+                        <td class="text-end fw-bold">₦{{ number_format($totals['areas'][$key] - $refund + $received, 2) }}</td>
                     </tr>
                     @endforeach
-                    @if($otherRefunds > 0)
+                    @if($otherRefunds > 0 || $otherDiscountReceived > 0)
                     <tr>
-                        <td><strong>Other refunds</strong></td>
-                        <td colspan="7"></td>
-                        <td class="text-end text-danger">-₦{{ number_format($otherRefunds, 2) }}</td>
-                        <td class="text-end fw-bold">-₦{{ number_format($otherRefunds, 2) }}</td>
+                        <td><strong>Other / General</strong></td>
+                        <td colspan="8"></td>
+                        <td class="text-end text-danger">{{ $money($otherRefunds, '-') }}</td>
+                        <td class="text-end text-success">{{ $money($otherDiscountReceived, '+') }}</td>
+                        <td class="text-end fw-bold">₦{{ number_format($otherDiscountReceived - $otherRefunds, 2) }}</td>
                     </tr>
                     @endif
                 </tbody>
@@ -165,7 +191,9 @@
                         <td class="text-end">₦{{ number_format($totals['channels']['credit'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($totals['channels']['unsplit'] + $totals['channels']['outstanding'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($totals['gross'], 2) }}</td>
+                        <td class="text-end text-warning">₦{{ number_format($totals['discount_allowed'], 2) }}</td>
                         <td class="text-end text-danger">-₦{{ number_format($totals['refund_total'], 2) }}</td>
+                        <td class="text-end text-success">+₦{{ number_format($totals['discount_received'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($totals['net'], 2) }}</td>
                     </tr>
                 </tfoot>
@@ -173,6 +201,8 @@
         </div>
         <small class="text-muted d-block mt-2">
             Bar and Kitchen are split by item category. "Other" covers mixed payments recorded before the cash/transfer split existed and any unpaid balance.
+            Discount Allowed is what customers were given off their bills; it is already taken off the income figures.
+            Discount Received comes from supplier discounts recorded on purchase requisitions (Hotel purchases count under Hotel Rooms) and is added to Net.
         </small>
     </div>
 </div>
@@ -229,7 +259,9 @@
                         <th class="text-end">Transfer</th>
                         <th class="text-end">POS</th>
                         <th class="text-end">Credit</th>
+                        <th class="text-end">Disc. Allowed</th>
                         <th class="text-end">Refunds</th>
+                        <th class="text-end">Disc. Received</th>
                         <th class="text-end">Net</th>
                         <th class="text-end">Cash at Hand</th>
                     </tr>
@@ -246,7 +278,9 @@
                         <td class="text-end">₦{{ number_format($row['channels']['transfer'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($row['channels']['pos'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($row['channels']['credit'], 2) }}</td>
-                        <td class="text-end text-danger">{{ $row['refund_total'] > 0 ? '-₦' . number_format($row['refund_total'], 2) : '-' }}</td>
+                        <td class="text-end text-warning">{{ $money($row['discount_allowed']) }}</td>
+                        <td class="text-end text-danger">{{ $money($row['refund_total'], '-') }}</td>
+                        <td class="text-end text-success">{{ $money($row['discount_received'], '+') }}</td>
                         <td class="text-end fw-bold">₦{{ number_format($row['net'], 2) }}</td>
                         <td class="text-end text-success fw-bold">₦{{ number_format($row['cash_at_hand'], 2) }}</td>
                     </tr>
@@ -264,7 +298,9 @@
                         <td class="text-end">₦{{ number_format($totals['channels']['transfer'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($totals['channels']['pos'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($totals['channels']['credit'], 2) }}</td>
+                        <td class="text-end text-warning">₦{{ number_format($totals['discount_allowed'], 2) }}</td>
                         <td class="text-end text-danger">-₦{{ number_format($totals['refund_total'], 2) }}</td>
+                        <td class="text-end text-success">+₦{{ number_format($totals['discount_received'], 2) }}</td>
                         <td class="text-end">₦{{ number_format($totals['net'], 2) }}</td>
                         <td class="text-end text-success">₦{{ number_format($totals['cash_at_hand'], 2) }}</td>
                     </tr>

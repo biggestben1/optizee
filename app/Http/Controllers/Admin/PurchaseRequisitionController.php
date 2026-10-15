@@ -68,10 +68,12 @@ class PurchaseRequisitionController extends Controller
             'description' => 'required|string|max:500',
             'items_description' => 'nullable|string',
             'amount' => 'required|numeric|min:0.01',
+            'discount_received' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
 
         $pr = PurchaseRequisition::create([
+            'discount_received' => $validated['discount_received'] ?? 0,
             'department' => $validated['department'],
             'pr_date' => $validated['pr_date'],
             'requested_by' => auth()->id(),
@@ -117,8 +119,10 @@ class PurchaseRequisitionController extends Controller
             'description' => 'required|string|max:500',
             'items_description' => 'nullable|string',
             'amount' => 'required|numeric|min:0.01',
+            'discount_received' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
+        $validated['discount_received'] = $validated['discount_received'] ?? 0;
 
         $oldValues = $purchaseRequisition->toArray();
         $purchaseRequisition->update($validated);
@@ -127,6 +131,27 @@ class PurchaseRequisitionController extends Controller
 
         return redirect()->route('admin.purchase-requisitions.show', $purchaseRequisition)
             ->with('success', 'Purchase Requisition updated successfully.');
+    }
+
+    /**
+     * Supplier discounts are often only known after purchase, so this works at any status except rejected.
+     */
+    public function updateDiscount(Request $request, PurchaseRequisition $purchaseRequisition)
+    {
+        if ($purchaseRequisition->status === 'rejected') {
+            return back()->with('error', 'Rejected PRs cannot have a discount recorded.');
+        }
+
+        $validated = $request->validate([
+            'discount_received' => 'required|numeric|min:0',
+        ]);
+
+        $old = $purchaseRequisition->only('discount_received');
+        $purchaseRequisition->update($validated);
+
+        AuditLog::log('pr_discount_received', "Discount received of ₦{$purchaseRequisition->discount_received} on {$purchaseRequisition->pr_number}", $purchaseRequisition, $old, $purchaseRequisition->only('discount_received'));
+
+        return back()->with('success', 'Discount received saved.');
     }
 
     public function approve(Request $request, PurchaseRequisition $purchaseRequisition)

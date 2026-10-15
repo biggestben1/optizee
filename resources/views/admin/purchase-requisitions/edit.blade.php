@@ -74,6 +74,16 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Discount Received (₦)</label>
+                        <input type="number" name="discount_received" class="form-control @error('discount_received') is-invalid @enderror"
+                               step="0.01" min="0" value="{{ old('discount_received', (float) $purchaseRequisition->discount_received ?: '') }}" placeholder="0">
+                        <small class="text-muted">Discount the supplier gave on this purchase</small>
+                        @error('discount_received')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Notes</label>
                         <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" 
                                   rows="3">{{ old('notes', $purchaseRequisition->notes) }}</textarea>

@@ -240,6 +240,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/purchase-requisitions/{purchaseRequisition}/approve', [PurchaseRequisitionController::class, 'approve'])->name('purchase-requisitions.approve');
     Route::post('/purchase-requisitions/{purchaseRequisition}/reject', [PurchaseRequisitionController::class, 'reject'])->name('purchase-requisitions.reject');
     Route::post('/purchase-requisitions/{purchaseRequisition}/complete', [PurchaseRequisitionController::class, 'complete'])->name('purchase-requisitions.complete');
+    Route::post('/purchase-requisitions/{purchaseRequisition}/discount', [PurchaseRequisitionController::class, 'updateDiscount'])->name('purchase-requisitions.discount');
 
     // Expenses
     Route::resource('expenses', ExpenseController::class);

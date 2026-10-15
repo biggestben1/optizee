@@ -26,6 +26,7 @@ class PurchaseRequisition extends Model
         'description',
         'items_description',
         'amount',
+        'discount_received',
         'status',
         'notes',
         'rejection_reason',
@@ -36,6 +37,17 @@ class PurchaseRequisition extends Model
         'pr_date' => 'date',
         'approved_at' => 'datetime',
         'amount' => 'decimal:2',
+        'discount_received' => 'decimal:2',
+    ];
+
+    /**
+     * Cumulative report area each department's supplier discounts count towards.
+     */
+    public const REPORT_AREAS = [
+        'bar' => 'bar',
+        'kitchen' => 'kitchen',
+        'hotel' => 'rooms',
+        'general' => 'other',
     ];
 
     protected static function boot()
