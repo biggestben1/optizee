@@ -72,99 +72,177 @@
     .cart-item:last-child {
         border-bottom: none;
     }
-    .category-btn {
-        margin: 5px;
+    .pos-board {
+        border: 0;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 12px 32px rgba(26, 18, 8, 0.07);
     }
-    .category-btn.active {
-        background-color: #5e72e4 !important;
-        border-color: #5e72e4 !important;
-        color: #fff !important;
+    .pos-board > .card-header {
+        background: #fffdf9;
+        border-bottom: 1px solid #f0e6d8;
+    }
+    .pos-board > .card-body {
+        background: #faf6f0;
+    }
+    .pos-board .product-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+        gap: 12px;
+        margin: 0;
+        max-height: calc(100vh - 250px);
+        padding: 2px 4px 8px 2px;
+    }
+    .pos-board .product-item {
+        width: auto !important;
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
     .pos-board .product-card {
         position: relative;
-        border: 1px solid #ece7e1;
+        min-height: 138px;
+        border: 1px solid #eadfce;
         border-radius: 16px;
         background: #fff;
-        box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+        box-shadow: 0 1px 2px rgba(26, 18, 8, 0.04);
         overflow: hidden;
     }
-    .pos-board .product-card:hover {
-        border-color: #5e72e4;
-        transform: translateY(-3px);
-        box-shadow: 0 10px 24px rgba(94, 114, 228, 0.16);
+    .pos-board .product-card .card-body {
+        background: transparent;
+        padding: 14px 42px 12px 14px !important;
     }
-    .pos-board.pos-area-kitchen .product-card:hover,
-    .pos-board.pos-area-kitchen .category-btn.active {
-        border-color: #2dce89 !important;
-        background-color: #2dce89 !important;
+    .pos-board .product-card:hover {
+        border-color: #e2a04a;
+        background: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(201, 132, 46, 0.18);
     }
     .pos-board.pos-area-kitchen .product-card:hover {
-        background: #fff !important;
-        box-shadow: 0 10px 24px rgba(45, 206, 137, 0.18);
+        border-color: #2dce89;
+        box-shadow: 0 12px 24px rgba(45, 206, 137, 0.18);
     }
     .pos-board .product-card.in-cart {
-        border-color: #5e72e4;
-        background: linear-gradient(180deg, #f4f6ff 0%, #fff 55%);
+        border-color: #c9842e;
+        background: linear-gradient(180deg, #fff8ee 0%, #fff 58%);
     }
     .pos-board.pos-area-kitchen .product-card.in-cart {
         border-color: #2dce89;
-        background: linear-gradient(180deg, #f1fbf6 0%, #fff 55%);
+        background: linear-gradient(180deg, #f3fbf6 0%, #fff 58%);
     }
     .pos-board .product-card.pop {
         animation: posCardPop 0.18s ease;
     }
     @keyframes posCardPop {
-        50% { transform: scale(0.96); }
+        50% { transform: scale(0.97); }
     }
+    .pos-tile-cat {
+        display: inline-block;
+        max-width: 100%;
+        margin-bottom: 8px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #fff4e4;
+        color: #8a5a12;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pos-board.pos-area-kitchen .pos-tile-cat {
+        background: #e8f8ef;
+        color: #157a45;
+    }
+    .pos-tile-name {
+        margin: 0 0 12px;
+        color: #1a1208;
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.5em;
+    }
+    .pos-tile-foot {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: auto;
+    }
+    .pos-stock {
+        color: #8a7b6a;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .pos-stock.low { color: #b45309; }
     .pos-qty-badge {
         position: absolute;
-        top: 8px;
-        right: 8px;
-        min-width: 24px;
-        height: 24px;
-        padding: 0 6px;
+        top: 10px;
+        right: 10px;
+        min-width: 26px;
+        height: 26px;
+        padding: 0 7px;
         border-radius: 999px;
-        background: #5e72e4;
-        color: #fff;
+        background: #c9842e;
+        color: #1a1208;
         font-size: 12px;
         font-weight: 800;
         display: none;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 4px 10px rgba(201, 132, 46, 0.35);
     }
     .pos-board.pos-area-kitchen .pos-qty-badge {
         background: #2dce89;
-    }
-    .pos-add-mark {
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(94, 114, 228, 0.12);
-        color: #5e72e4;
-        margin-bottom: 8px;
-    }
-    .pos-board.pos-area-kitchen .pos-add-mark {
-        background: rgba(45, 206, 137, 0.14);
-        color: #1aae6f;
+        color: #08301c;
     }
     .pos-board .product-price {
-        color: #5e72e4;
+        color: #c9842e;
         font-weight: 800;
         font-size: 1.05rem;
+        line-height: 1;
         margin: 0;
     }
     .pos-board.pos-area-kitchen .product-price {
         color: #1aae6f;
     }
     .pos-board .category-btn {
+        margin: 4px;
         border-radius: 999px;
-        font-weight: 600;
+        border-color: #eadfce !important;
+        background: #fff !important;
+        color: #5c4a38 !important;
+        font-weight: 700;
+    }
+    .pos-board .category-btn:hover {
+        border-color: #e2a04a !important;
+        color: #1a1208 !important;
+    }
+    .pos-board .category-btn.active,
+    .pos-board.pos-area-kitchen .category-btn.active {
+        background: linear-gradient(180deg, #e2a04a, #c9842e) !important;
+        border-color: #c9842e !important;
+        color: #1a1208 !important;
+        box-shadow: 0 6px 14px rgba(201, 132, 46, 0.28);
+    }
+    .pos-board.pos-area-kitchen .category-btn.active {
+        background: linear-gradient(180deg, #3ddc97, #1aae6f) !important;
+        border-color: #1aae6f !important;
+        color: #08301c !important;
     }
     .pos-board #product-search {
+        width: min(250px, 100%);
         border-radius: 12px;
+        border-color: #eadfce;
+        background: #fff;
     }
     #cart-items {
         max-height: none;
@@ -555,11 +633,13 @@
                                      data-product-stock="{{ $product->stock_quantity }}"
                                      onclick="handleProductClick(this)">
                                     <span class="pos-qty-badge">0</span>
-                                    <div class="card-body text-start p-3 d-flex flex-column">
-                                        <span class="pos-add-mark"><i class="fe fe-plus"></i></span>
-                                        <h6 class="mb-1 fw-bold">{{ $product->name }}</h6>
-                                        <p class="product-price">₦{{ number_format($product->selling_price, 2) }}</p>
-                                        <small class="text-muted mt-auto">Stock {{ $product->stock_quantity }}</small>
+                                    <div class="card-body text-start d-flex flex-column">
+                                        <span class="pos-tile-cat">{{ $category->name }}</span>
+                                        <h6 class="pos-tile-name">{{ $product->name }}</h6>
+                                        <div class="pos-tile-foot">
+                                            <p class="product-price">₦{{ number_format($product->selling_price, 2) }}</p>
+                                            <span class="pos-stock {{ $product->stock_quantity > 0 && $product->stock_quantity <= 5 ? 'low' : '' }}">{{ $product->stock_quantity }} left</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
