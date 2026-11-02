@@ -45,6 +45,102 @@
     <!-- COLOR SKIN CSS -->
     <link id="theme" rel="stylesheet" type="text/css" media="all" href="/sash/assets/colors/color1.css" />
 
+    <style>
+        body.app,
+        .login-img {
+            min-height: 100vh;
+            background: radial-gradient(1200px 500px at 50% -10%, rgba(226, 160, 74, 0.28), transparent 55%),
+                        linear-gradient(165deg, #1a1208 0%, #2a2118 48%, #3d2a14 100%) !important;
+        }
+        .login-img .page { background: transparent !important; }
+        .col-login { max-width: 460px; }
+        .optizee-logo-wrap {
+            display: inline-flex;
+            background: #fff;
+            border-radius: 22px;
+            padding: 10px 14px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+            margin-bottom: 8px;
+        }
+        .optizee-logo-wrap img { height: 108px !important; }
+        .container-login100 { align-items: flex-start !important; padding-top: 0 !important; }
+        .wrap-login100 {
+            width: 100%;
+            max-width: 440px;
+            margin: 0 auto 40px;
+            padding: 28px 26px 22px !important;
+            border-radius: 24px !important;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28) !important;
+        }
+        .login100-form-title {
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #1a1208 !important;
+            padding-bottom: 6px !important;
+        }
+        .login-subtitle {
+            display: block;
+            text-align: center;
+            color: #8a7b6a;
+            margin-bottom: 22px;
+            font-size: 14px;
+        }
+        .wrap-input100 { margin-bottom: 12px; }
+        .wrap-input100 .input-group-text {
+            border-radius: 14px 0 0 14px !important;
+            background: #f7f1e8 !important;
+            border-color: #eadfce !important;
+        }
+        .wrap-input100 .input100 {
+            height: 50px;
+            border-radius: 0 14px 14px 0 !important;
+            background: #fffdf9;
+            border-color: #eadfce !important;
+        }
+        .wrap-input100 .input100:focus {
+            box-shadow: 0 0 0 3px rgba(226, 160, 74, 0.25);
+            border-color: #e2a04a !important;
+        }
+        .login100-form-btn {
+            height: 50px !important;
+            border: 0;
+            border-radius: 14px !important;
+            background: linear-gradient(180deg, #e2a04a, #c9842e) !important;
+            color: #1a1208 !important;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            box-shadow: 0 8px 18px rgba(201, 132, 46, 0.35);
+        }
+        .login100-form-btn:hover { transform: translateY(-1px); }
+        .login100-form-btn:active { transform: scale(0.98); }
+        #quick-login-btn {
+            height: 46px;
+            border-radius: 14px;
+            border-color: #e2a04a;
+            color: #8a5a12;
+            font-weight: 700;
+            background: #fff8ee;
+        }
+        #quick-login-btn:hover { background: #f6e4c4; color: #1a1208; }
+        .quick-login-box { border-top: 1px solid #f0e6d8 !important; }
+        #quickLoginModal .modal-content { border: 0; border-radius: 20px; }
+        #quickLoginModal .modal-header { border-bottom-color: #f0e6d8; }
+        #quick-login-code {
+            letter-spacing: 0.4em;
+            font-weight: 800;
+            border-radius: 14px;
+        }
+        #quick-login-submit {
+            background: #c9842e;
+            border-color: #c9842e;
+            color: #1a1208;
+            font-weight: 800;
+            border-radius: 12px;
+        }
+    </style>
+
 </head>
 
 <body class="app sidebar-mini ltr">
@@ -59,7 +155,9 @@
                 <!-- CONTAINER OPEN -->
                 <div class="col col-login mx-auto mt-7">
                     <div class="text-center">
-                        <img src="{{ asset('logo.jpg') }}?v={{ $brandLogoVer }}" class="header-brand-img" alt="Optizee Hotel and Suites" fetchpriority="high" decoding="async" style="height: 160px; width: auto; object-fit: contain;">
+                        <span class="optizee-logo-wrap">
+                            <img src="{{ asset('logo.jpg') }}?v={{ $brandLogoVer }}" class="header-brand-img" alt="Optizee Hotel and Suites" fetchpriority="high" decoding="async" style="height: 108px; width: auto; object-fit: contain;">
+                        </span>
                     </div>
                 </div>
 
@@ -67,9 +165,10 @@
                     <div class="wrap-login100 p-6">
                         <form class="login100-form validate-form" method="POST" action="{{ route('login') }}">
                             @csrf
-                            <span class="login100-form-title pb-5">
+                            <span class="login100-form-title">
                                 Admin Login
                             </span>
+                            <span class="login-subtitle">Sign in to Optizee Hotel and Suites</span>
                             
                             @if ($errors->any())
                                 <div class="alert alert-danger mb-4">
@@ -105,7 +204,7 @@
                             </div>
                             
                             <!-- Quick Login Options -->
-                            <div class="text-center mt-4 pt-4 border-top">
+                            <div class="text-center mt-4 pt-4 border-top quick-login-box">
                                 <p class="text-muted mb-3">Quick Login Options</p>
                                 
                                 <!-- Code Only Login -->

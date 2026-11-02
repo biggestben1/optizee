@@ -2,19 +2,22 @@ import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
 
-/// Separate carts per table guest so cashiers can take orders for different people.
+/// Separate carts per table guest and POS area (bar / kitchen).
 class CartProvider extends ChangeNotifier {
+  /// bar | kitchen — matches web admin POS ?area=
+  String posArea = 'bar';
+
   int? tableId;
   String? tableNumber;
   int? guestId;
   String? guestName;
 
-  /// key: walkin | table_{id}_guest_{guestId}
+  /// key: {area}_walkin | {area}_table_{id}_guest_{guestId}
   final Map<String, Map<int, CartItem>> _carts = {};
 
   String get _key {
-    if (tableId == null || guestId == null) return 'walkin';
-    return 'table_${tableId}_guest_$guestId';
+    if (tableId == null || guestId == null) return '${posArea}_walkin';
+    return '${posArea}_table_${tableId}_guest_$guestId';
   }
 
   Map<int, CartItem> get _items => _carts.putIfAbsent(_key, () => {});
@@ -26,17 +29,27 @@ class CartProvider extends ChangeNotifier {
   bool get requiresGuest => tableId != null;
   bool get hasGuestSelected => guestId != null;
 
+  String get areaLabel => posArea == 'kitchen' ? 'Kitchen POS' : 'Bar POS';
+
   String get orderLabel {
+    final area = areaLabel;
     if (tableId != null && guestName != null) {
-      return '${tableNumber ?? 'Table'} · $guestName';
+      return '$area · ${tableNumber ?? 'Table'} · $guestName';
     }
-    if (tableId != null) return tableNumber ?? 'Table';
-    return 'Walk-in';
+    if (tableId != null) return '$area · ${tableNumber ?? 'Table'}';
+    return '$area · Walk-in';
+  }
+
+  void setPosArea(String area) {
+    final next = area == 'kitchen' ? 'kitchen' : 'bar';
+    if (posArea == next) return;
+    posArea = next;
+    notifyListeners();
   }
 
   int countForGuest(int? forGuestId) {
     if (tableId == null || forGuestId == null) return 0;
-    final key = 'table_${tableId}_guest_$forGuestId';
+    final key = '${posArea}_table_${tableId}_guest_$forGuestId';
     final items = _carts[key];
     if (items == null) return 0;
     return items.values.fold(0, (sum, i) => sum + i.quantity);

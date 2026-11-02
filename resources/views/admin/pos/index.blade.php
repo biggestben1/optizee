@@ -78,6 +78,93 @@
     .category-btn.active {
         background-color: #5e72e4 !important;
         border-color: #5e72e4 !important;
+        color: #fff !important;
+    }
+    .pos-board .product-card {
+        position: relative;
+        border: 1px solid #ece7e1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+        overflow: hidden;
+    }
+    .pos-board .product-card:hover {
+        border-color: #5e72e4;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(94, 114, 228, 0.16);
+    }
+    .pos-board.pos-area-kitchen .product-card:hover,
+    .pos-board.pos-area-kitchen .category-btn.active {
+        border-color: #2dce89 !important;
+        background-color: #2dce89 !important;
+    }
+    .pos-board.pos-area-kitchen .product-card:hover {
+        background: #fff !important;
+        box-shadow: 0 10px 24px rgba(45, 206, 137, 0.18);
+    }
+    .pos-board .product-card.in-cart {
+        border-color: #5e72e4;
+        background: linear-gradient(180deg, #f4f6ff 0%, #fff 55%);
+    }
+    .pos-board.pos-area-kitchen .product-card.in-cart {
+        border-color: #2dce89;
+        background: linear-gradient(180deg, #f1fbf6 0%, #fff 55%);
+    }
+    .pos-board .product-card.pop {
+        animation: posCardPop 0.18s ease;
+    }
+    @keyframes posCardPop {
+        50% { transform: scale(0.96); }
+    }
+    .pos-qty-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        min-width: 24px;
+        height: 24px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: #5e72e4;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .pos-board.pos-area-kitchen .pos-qty-badge {
+        background: #2dce89;
+    }
+    .pos-add-mark {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(94, 114, 228, 0.12);
+        color: #5e72e4;
+        margin-bottom: 8px;
+    }
+    .pos-board.pos-area-kitchen .pos-add-mark {
+        background: rgba(45, 206, 137, 0.14);
+        color: #1aae6f;
+    }
+    .pos-board .product-price {
+        color: #5e72e4;
+        font-weight: 800;
+        font-size: 1.05rem;
+        margin: 0;
+    }
+    .pos-board.pos-area-kitchen .product-price {
+        color: #1aae6f;
+    }
+    .pos-board .category-btn {
+        border-radius: 999px;
+        font-weight: 600;
+    }
+    .pos-board #product-search {
+        border-radius: 12px;
     }
     #cart-items {
         max-height: none;
@@ -423,7 +510,7 @@
 <div class="row">
     <!-- Products Section -->
     <div class="col-12 col-lg-7">
-        <div class="card">
+        <div class="card pos-board pos-area-{{ $posArea }}">
             <div class="card-header flex-wrap gap-2">
                 <div class="btn-group" role="group" aria-label="Switch POS">
                     @foreach(\App\Models\Sale::POS_AREAS as $areaKey => $areaLabel)
@@ -467,10 +554,12 @@
                                      data-product-price="{{ $product->selling_price }}"
                                      data-product-stock="{{ $product->stock_quantity }}"
                                      onclick="handleProductClick(this)">
-                                    <div class="card-body text-center p-3 d-flex flex-column justify-content-center">
-                                        <h6 class="mb-2 fw-bold">{{ $product->name }}</h6>
-                                        <p class="text-primary mb-2 fw-bold fs-5">₦{{ number_format($product->selling_price, 2) }}</p>
-                                        <small class="text-muted">Stock: {{ $product->stock_quantity }}</small>
+                                    <span class="pos-qty-badge">0</span>
+                                    <div class="card-body text-start p-3 d-flex flex-column">
+                                        <span class="pos-add-mark"><i class="fe fe-plus"></i></span>
+                                        <h6 class="mb-1 fw-bold">{{ $product->name }}</h6>
+                                        <p class="product-price">₦{{ number_format($product->selling_price, 2) }}</p>
+                                        <small class="text-muted mt-auto">Stock {{ $product->stock_quantity }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -1243,6 +1332,12 @@ function addToCart(product) {
         }
         
         renderCart();
+        const addedCard = document.querySelector('.product-card[data-product-id="' + product.id + '"]');
+        if (addedCard) {
+            addedCard.classList.remove('pop');
+            void addedCard.offsetWidth;
+            addedCard.classList.add('pop');
+        }
         
         // Update active guest order - CRITICAL: Always update when adding items
         if (currentGuestId) {
@@ -2489,6 +2584,7 @@ function renderCart() {
         container.innerHTML = `<p class="text-center text-muted py-5" id="empty-cart-message">${emptyMessage}</p>`;
         if (printOrderBtn) printOrderBtn.disabled = true;
         updateTotals();
+        syncPosProductBadges();
         return;
     }
     
@@ -2535,11 +2631,28 @@ function renderCart() {
     
     container.innerHTML = html;
     updateTotals();
+    syncPosProductBadges();
     
     // Update tab badge if guest order is active
     if (currentGuestId) {
         updateGuestTabBadge(currentGuestId);
     }
+}
+
+function syncPosProductBadges() {
+    const counts = {};
+    (Array.isArray(cart) ? cart : []).forEach(function (item) {
+        counts[item.product_id] = (counts[item.product_id] || 0) + item.quantity;
+    });
+    document.querySelectorAll('.product-card').forEach(function (card) {
+        const qty = counts[card.dataset.productId] || 0;
+        const badge = card.querySelector('.pos-qty-badge');
+        if (badge) {
+            badge.textContent = qty;
+            badge.style.display = qty > 0 ? 'flex' : 'none';
+        }
+        card.classList.toggle('in-cart', qty > 0);
+    });
 }
 
 // Helper function to format numbers with commas

@@ -15,7 +15,7 @@
     <meta property="og:url" content="{{ url()->current() }}">
 
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#5e72e4">
+    <meta name="theme-color" content="#c9842e">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Optizee Hotel and Suites">
@@ -52,17 +52,102 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <style>
-        /* Keep logo from overlapping sidebar menu items */
-        .app-header .header-brand-img,
-        .app-sidebar .side-header .header-brand-img {
-            height: 110px !important;
-            width: auto !important;
-            max-width: 220px;
-            object-fit: contain;
+        /* Hotel menu: warm dark rail, gold active item */
+        body.app .app-sidebar {
+            background: linear-gradient(180deg, #1a1208 0%, #241a10 48%, #3a2814 100%) !important;
+            border-right: 0 !important;
+            box-shadow: 10px 0 28px rgba(26, 18, 8, 0.16) !important;
+            color: #f4ead8;
         }
-        .app-sidebar .side-header {
-            padding-top: 16px;
-            padding-bottom: 16px;
+        body.app .app-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(226, 160, 74, 0.55);
+        }
+        body.app .app-header.header {
+            border-bottom: 3px solid #e2a04a;
+            box-shadow: 0 8px 18px rgba(26, 18, 8, 0.06);
+        }
+        body.app .app-sidebar .side-header {
+            height: auto !important;
+            justify-content: center;
+            padding: 16px 12px 12px !important;
+            background: transparent !important;
+            border-right: 0 !important;
+            border-bottom: 1px solid rgba(226, 160, 74, 0.28) !important;
+        }
+        body.app .app-header .header-brand-img,
+        body.app .app-sidebar .side-header .header-brand-img {
+            height: 92px !important;
+            width: auto !important;
+            max-width: 210px;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 16px;
+            padding: 6px 10px;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+        }
+        body.app .side-menu {
+            padding: 10px 8px 24px;
+        }
+        body.app .side-menu .sub-category {
+            padding: 14px 16px 4px;
+        }
+        body.app .side-menu .sub-category h3 {
+            color: #e2a04a !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.14em;
+            font-size: 11px;
+        }
+        body.app .side-menu__item {
+            color: #f6efe4 !important;
+            border-radius: 12px;
+            margin: 2px 4px;
+            padding: 10px 14px;
+            font-weight: 600;
+            transition: background 0.15s ease, transform 0.12s ease;
+        }
+        body.app .side-menu .side-menu__icon,
+        body.app .side-menu__item .side-menu__label {
+            color: #f6efe4 !important;
+        }
+        body.app .side-menu__item:hover,
+        body.app .side-menu__item:focus {
+            background: rgba(226, 160, 74, 0.18) !important;
+            color: #fff !important;
+            transform: translateX(2px);
+        }
+        body.app .side-menu__item:hover .side-menu__icon,
+        body.app .side-menu__item:hover .side-menu__label,
+        body.app .side-menu__item:focus .side-menu__icon,
+        body.app .side-menu__item:focus .side-menu__label {
+            color: #fff !important;
+        }
+        body.app .side-menu__item.active,
+        body.app .side-menu__item.active:hover,
+        body.app .side-menu__item.active:focus {
+            background: linear-gradient(180deg, #e2a04a, #c9842e) !important;
+            color: #1a1208 !important;
+            box-shadow: 0 8px 16px rgba(201, 132, 46, 0.32);
+            transform: none;
+        }
+        body.app .side-menu__item.active .side-menu__icon,
+        body.app .side-menu__item.active .side-menu__label,
+        body.app .side-menu__item.active:hover .side-menu__icon,
+        body.app .side-menu__item.active:hover .side-menu__label {
+            color: #1a1208 !important;
+        }
+        body.app .side-menu form .side-menu__item:hover {
+            background: rgba(220, 53, 69, 0.2) !important;
+            transform: none;
+        }
+        body.app.sidebar-mini.sidenav-toggled .side-menu__item {
+            margin: 2px 6px;
+            justify-content: center;
+            padding: 10px 0;
+            transform: none;
+        }
+        body.app.sidebar-mini.sidenav-toggled.sidenav-toggled-open .side-menu__item {
+            justify-content: flex-start;
+            padding: 10px 14px;
         }
     </style>
 

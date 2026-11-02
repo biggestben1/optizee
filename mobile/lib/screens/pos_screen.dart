@@ -11,7 +11,10 @@ import '../services/api_client.dart';
 import '../theme/app_theme.dart';
 
 class PosScreen extends StatefulWidget {
-  const PosScreen({super.key});
+  const PosScreen({super.key, this.area = 'bar'});
+
+  /// bar | kitchen — same as web /admin/pos?area=
+  final String area;
 
   @override
   State<PosScreen> createState() => _PosScreenState();
@@ -32,9 +35,16 @@ class _PosScreenState extends State<PosScreen> {
   bool _loadingGuests = false;
   String? _error;
 
+  bool get _isKitchen => widget.area == 'kitchen';
+  String get _areaLabel => _isKitchen ? 'Kitchen POS' : 'Bar POS';
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CartProvider>().setPosArea(widget.area);
+    });
     _load();
     _readyTimer = Timer.periodic(const Duration(seconds: 8), (_) => _refreshReady());
   }
@@ -50,10 +60,12 @@ class _PosScreenState extends State<PosScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _selectedCategoryId = null;
     });
     try {
+      context.read<CartProvider>().setPosArea(widget.area);
       final api = context.read<ApiClient>();
-      final catalog = await api.get('/staff/pos/catalog');
+      final catalog = await api.get('/staff/pos/catalog', query: {'area': widget.area});
       final tables = await api.get('/staff/pos/tables');
       final customers = await api.get('/staff/pos/customers');
       final ready = await api.get('/staff/pos/ready-orders');
@@ -447,6 +459,7 @@ class _PosScreenState extends State<PosScreen> {
         'table_id': checkoutTableId,
         'table_guest_id': checkoutGuestId,
         'discount': 0,
+        'pos_area': widget.area,
         if (notes.isNotEmpty) 'notes': notes,
       };
       final res = await api.post('/staff/pos/checkout', body: body);
@@ -653,8 +666,11 @@ class _PosScreenState extends State<PosScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Cashier POS'),
-            Text(user?.name ?? '', style: const TextStyle(fontSize: 12, color: AppTheme.muted, fontWeight: FontWeight.w500)),
+            Text(_areaLabel),
+            Text(
+              user?.name ?? '',
+              style: const TextStyle(fontSize: 12, color: AppTheme.muted, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
         actions: [
@@ -764,6 +780,23 @@ class _PosScreenState extends State<PosScreen> {
                             ),
                           ),
                           const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                          if (_products.isEmpty)
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Text(
+                                    _categories.isEmpty
+                                        ? 'No ${_isKitchen ? 'food' : 'bar'} products in stock.\nCheck Products on the website.'
+                                        : 'No products match your search.',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: AppTheme.muted),
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
                           SliverPadding(
                             padding: EdgeInsets.fromLTRB(14, 0, 14, cart.count > 0 ? 100 : 24),
                             sliver: SliverGrid(
@@ -776,43 +809,14 @@ class _PosScreenState extends State<PosScreen> {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) {
                                   final p = _products[index];
-                                  return Material(
-                                    color: AppTheme.surface,
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(16),
-                                      onTap: () => _tapProduct(p),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(color: AppTheme.border),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                p.name,
-                                                maxLines: 3,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(fontWeight: FontWeight.w700, height: 1.2),
-                                              ),
-                                            ),
-                                            Text('Stock ${p.stockQuantity}', style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              _money.format(p.sellingPrice),
-                                              style: const TextStyle(
-                                                color: AppTheme.accent,
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
+                                  final inCart = cart.items.where((i) => i.product.id == p.id).fold<int>(0, (n, i) => n + i.quantity);
+                                  return _ProductTile(
+                                    name: p.name,
+                                    price: _money.format(p.sellingPrice),
+                                    stock: p.stockQuantity,
+                                    inCart: inCart,
+                                    accent: _isKitchen ? AppTheme.success : AppTheme.accent,
+                                    onTap: () => _tapProduct(p),
                                   );
                                 },
                                 childCount: _products.length,
@@ -889,6 +893,123 @@ class _PosScreenState extends State<PosScreen> {
                       ),
                   ],
                 ),
+    );
+  }
+}
+
+class _ProductTile extends StatefulWidget {
+  const _ProductTile({
+    required this.name,
+    required this.price,
+    required this.stock,
+    required this.inCart,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String name;
+  final String price;
+  final int stock;
+  final int inCart;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  State<_ProductTile> createState() => _ProductTileState();
+}
+
+class _ProductTileState extends State<_ProductTile> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _pressed ? 0.96 : 1,
+      duration: const Duration(milliseconds: 90),
+      curve: Curves.easeOut,
+      child: Material(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTap: () {
+            setState(() => _pressed = false);
+            widget.onTap();
+          },
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: widget.inCart > 0 ? widget.accent.withValues(alpha: 0.7) : AppTheme.border,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  widget.accent.withValues(alpha: widget.inCart > 0 ? 0.18 : 0.08),
+                  AppTheme.surface,
+                ],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: widget.accent.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.add, color: widget.accent, size: 20),
+                      ),
+                      const Spacer(),
+                      if (widget.inCart > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: widget.accent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${widget.inCart}',
+                            style: const TextStyle(
+                              color: Color(0xFF1A1208),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    widget.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800, height: 1.15, fontSize: 15),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.price,
+                    style: TextStyle(color: widget.accent, fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
+                  Text(
+                    'Stock ${widget.stock}',
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -17,14 +17,27 @@ use Illuminate\Support\Facades\DB;
 
 class PosController extends Controller
 {
-    public function catalog()
+    public function catalog(Request $request)
     {
         $this->ensurePosAccess();
 
+        // Omit area = full catalog (older APKs). bar|kitchen = filtered for the split POS.
+        $area = in_array($request->query('area'), ['bar', 'kitchen'], true)
+            ? $request->query('area')
+            : null;
+
         $categories = Category::active()
-            ->with(['products' => fn ($q) => $q->active()->where('stock_quantity', '>', 0)->orderBy('name')])
+            ->with([
+                'parent',
+                'products' => fn ($q) => $q->active()->where('stock_quantity', '>', 0)->orderBy('name'),
+            ])
             ->orderBy('name')
             ->get()
+            ->when($area !== null, function ($collection) use ($area) {
+                return $collection->filter(
+                    fn (Category $category) => ($category->salesArea() === 'kitchen') === ($area === 'kitchen')
+                );
+            })
             ->map(function ($category) {
                 return [
                     'id' => $category->id,
@@ -41,7 +54,10 @@ class PosController extends Controller
             ->filter(fn ($c) => count($c['products']) > 0)
             ->values();
 
-        return response()->json(['categories' => $categories]);
+        return response()->json([
+            'area' => $area,
+            'categories' => $categories,
+        ]);
     }
 
     public function tables()
@@ -180,7 +196,9 @@ class PosController extends Controller
             'amount_paid' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
+            'pos_area' => 'nullable|in:bar,kitchen',
         ]);
+        $posArea = $validated['pos_area'] ?? null;
 
         foreach ($validated['items'] as $item) {
             $product = Product::find($item['product_id']);
@@ -215,16 +233,7 @@ class PosController extends Controller
             }
         }
 
-        $kitchenKeywords = ['food', 'kitchen', 'meal', 'dish', 'main', 'appetizer', 'starter', 'soup', 'salad', 'dessert', 'breakfast', 'lunch', 'dinner', 'snack'];
-        $kitchenCategoryIds = Category::active()
-            ->where(function ($q) use ($kitchenKeywords) {
-                foreach ($kitchenKeywords as $keyword) {
-                    $q->orWhere('name', 'like', "%{$keyword}%");
-                }
-            })
-            ->pluck('id')
-            ->toArray();
-
+        $kitchenCategoryIds = Category::kitchenCategoryIds();
         $hasKitchenItems = false;
         foreach ($validated['items'] as $item) {
             $product = Product::find($item['product_id']);
@@ -232,6 +241,9 @@ class PosController extends Controller
                 $hasKitchenItems = true;
                 break;
             }
+        }
+        if ($posArea === null) {
+            $posArea = $hasKitchenItems ? 'kitchen' : 'bar';
         }
 
         try {
@@ -245,6 +257,7 @@ class PosController extends Controller
                 'customer_id' => $validated['customer_id'] ?? null,
                 'table_id' => $validated['table_id'] ?? null,
                 'table_guest_id' => $validated['table_guest_id'] ?? null,
+                'pos_area' => $posArea,
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'tax' => 0,
@@ -295,7 +308,8 @@ class PosController extends Controller
 
             if (!empty($validated['table_guest_id'])) {
                 $guest = TableGuest::find($validated['table_guest_id']);
-                if ($guest) {
+                // Keep the guest seated if they still have an unpaid order at the other POS.
+                if ($guest && !$guest->sales()->where('status', 'pending')->exists()) {
                     $guest->leave();
                     $table = $guest->table;
                     if ($table && $table->activeGuests()->count() === 0) {
