@@ -13,7 +13,7 @@ import '../theme/app_theme.dart';
 class PosScreen extends StatefulWidget {
   const PosScreen({super.key, this.area = 'bar'});
 
-  /// bar | kitchen — same as web /admin/pos?area=
+  /// bar | kitchen | vip_bar — same as web /admin/pos?area=
   final String area;
 
   @override
@@ -36,7 +36,17 @@ class _PosScreenState extends State<PosScreen> {
   String? _error;
 
   bool get _isKitchen => widget.area == 'kitchen';
-  String get _areaLabel => _isKitchen ? 'Kitchen POS' : 'Bar POS';
+  String get _areaLabel => switch (widget.area) {
+        'kitchen' => 'Kitchen POS',
+        'vip_bar' => 'VIP Bar POS',
+        _ => 'Bar POS',
+      };
+  Color get _accent => _isKitchen ? AppTheme.success : AppTheme.accent;
+  String get _emptyCatalogHint => switch (widget.area) {
+        'kitchen' => 'food',
+        'vip_bar' => 'VIP bar',
+        _ => 'bar',
+      };
 
   @override
   void initState() {
@@ -788,7 +798,7 @@ class _PosScreenState extends State<PosScreen> {
                                   padding: const EdgeInsets.all(24),
                                   child: Text(
                                     _categories.isEmpty
-                                        ? 'No ${_isKitchen ? 'food' : 'bar'} products in stock.\nCheck Products on the website.'
+                                        ? 'No $_emptyCatalogHint products in stock.\nCheck Products on the website.'
                                         : 'No products match your search.',
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(color: AppTheme.muted),
@@ -815,7 +825,7 @@ class _PosScreenState extends State<PosScreen> {
                                     price: _money.format(p.sellingPrice),
                                     stock: p.stockQuantity,
                                     inCart: inCart,
-                                    accent: _isKitchen ? AppTheme.success : AppTheme.accent,
+                                    accent: _accent,
                                     onTap: () => _tapProduct(p),
                                   );
                                 },

@@ -65,6 +65,13 @@ class _HomeShellState extends State<HomeShell> {
         page: PosScreen(area: 'kitchen'),
         posArea: 'kitchen',
       ));
+      items.add(const _NavItem(
+        label: 'VIP Bar',
+        icon: Icons.workspace_premium_outlined,
+        selectedIcon: Icons.workspace_premium,
+        page: PosScreen(area: 'vip_bar'),
+        posArea: 'vip_bar',
+      ));
     }
     if (user?.canAccessKitchen == true) {
       items.add(const _NavItem(

@@ -21,8 +21,8 @@ class PosController extends Controller
     {
         $this->ensurePosAccess();
 
-        // Omit area = full catalog (older APKs). bar|kitchen = filtered for the split POS.
-        $area = in_array($request->query('area'), ['bar', 'kitchen'], true)
+        // Omit area = full catalog (older APKs). bar|kitchen|vip_bar = filtered for the split POS.
+        $area = in_array($request->query('area'), ['bar', 'kitchen', 'vip_bar'], true)
             ? $request->query('area')
             : null;
 
@@ -38,14 +38,17 @@ class PosController extends Controller
                     fn (Category $category) => ($category->salesArea() === 'kitchen') === ($area === 'kitchen')
                 );
             })
-            ->map(function ($category) {
+            ->map(function ($category) use ($area) {
                 return [
                     'id' => $category->id,
                     'name' => $category->name,
                     'products' => $category->products->map(fn ($p) => [
                         'id' => $p->id,
                         'name' => $p->name,
-                        'selling_price' => (float) $p->selling_price,
+                        // selling_price is the charge for this POS area (VIP Bar uses VIP rate).
+                        'selling_price' => $p->priceForPosArea($area),
+                        'regular_price' => (float) $p->selling_price,
+                        'vip_price' => $p->vip_price !== null ? (float) $p->vip_price : null,
                         'stock_quantity' => (int) $p->stock_quantity,
                         'category_id' => $p->category_id,
                     ])->values(),
@@ -196,7 +199,7 @@ class PosController extends Controller
             'amount_paid' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
-            'pos_area' => 'nullable|in:bar,kitchen',
+            'pos_area' => 'nullable|in:bar,kitchen,vip_bar',
         ]);
         $posArea = $validated['pos_area'] ?? null;
 

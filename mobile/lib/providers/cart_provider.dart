@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
 
-/// Separate carts per table guest and POS area (bar / kitchen).
+/// Separate carts per table guest and POS area (bar / kitchen / vip_bar).
 class CartProvider extends ChangeNotifier {
-  /// bar | kitchen — matches web admin POS ?area=
+  /// bar | kitchen | vip_bar — matches web admin POS ?area=
   String posArea = 'bar';
 
   int? tableId;
@@ -29,7 +29,11 @@ class CartProvider extends ChangeNotifier {
   bool get requiresGuest => tableId != null;
   bool get hasGuestSelected => guestId != null;
 
-  String get areaLabel => posArea == 'kitchen' ? 'Kitchen POS' : 'Bar POS';
+  String get areaLabel => switch (posArea) {
+        'kitchen' => 'Kitchen POS',
+        'vip_bar' => 'VIP Bar POS',
+        _ => 'Bar POS',
+      };
 
   String get orderLabel {
     final area = areaLabel;
@@ -41,7 +45,11 @@ class CartProvider extends ChangeNotifier {
   }
 
   void setPosArea(String area) {
-    final next = area == 'kitchen' ? 'kitchen' : 'bar';
+    final next = switch (area) {
+      'kitchen' => 'kitchen',
+      'vip_bar' => 'vip_bar',
+      _ => 'bar',
+    };
     if (posArea == next) return;
     posArea = next;
     notifyListeners();
