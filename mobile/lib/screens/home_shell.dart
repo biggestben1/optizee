@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
+import '../services/order_alert.dart';
 import '../theme/app_theme.dart';
 import 'kitchen_screen.dart';
 import 'pos_screen.dart';
@@ -115,10 +116,53 @@ class _HomeShellState extends State<HomeShell> {
 
     final safeIndex = _index.clamp(0, items.length - 1);
 
+    final alert = context.watch<OrderAlertService>();
+
     return Scaffold(
-      body: IndexedStack(
-        index: safeIndex,
-        children: items.map((i) => i.page).toList(),
+      body: Column(
+        children: [
+          if (alert.isRinging)
+            Material(
+              color: AppTheme.accent,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.volume_up, color: Color(0xFF1A1208)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          alert.message ?? 'New order alert',
+                          style: const TextStyle(
+                            color: Color(0xFF1A1208),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A1208),
+                          foregroundColor: AppTheme.accent,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        ),
+                        onPressed: () => context.read<OrderAlertService>().stop(),
+                        child: const Text('Stop'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Expanded(
+            child: IndexedStack(
+              index: safeIndex,
+              children: items.map((i) => i.page).toList(),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(

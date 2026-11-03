@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../services/api_client.dart';
+import '../services/order_alert.dart';
 import '../theme/app_theme.dart';
 
 class PosScreen extends StatefulWidget {
@@ -30,6 +31,8 @@ class _PosScreenState extends State<PosScreen> {
   List<CreditCustomer> _customers = [];
   List<TableGuest> _guests = [];
   List<KitchenOrder> _ready = [];
+  final Set<int> _knownReadyIds = {};
+  bool _readySeeded = false;
   int? _selectedCategoryId;
   bool _loading = true;
   bool _loadingGuests = false;
@@ -92,6 +95,7 @@ class _PosScreenState extends State<PosScreen> {
       _ready = ((ready['orders'] as List?) ?? [])
           .map((e) => KitchenOrder.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
+      _syncReadyAlerts(_ready, announce: false);
 
       if (!mounted) return;
       final cart = context.read<CartProvider>();
@@ -104,16 +108,30 @@ class _PosScreenState extends State<PosScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  void _syncReadyAlerts(List<KitchenOrder> orders, {required bool announce}) {
+    final ids = orders.map((o) => o.id).toSet();
+    if (announce && _readySeeded) {
+      final newcomers = ids.difference(_knownReadyIds);
+      if (newcomers.isNotEmpty && mounted) {
+        unawaited(context.read<OrderAlertService>().ringKitchenReady());
+      }
+    }
+    _knownReadyIds
+      ..clear()
+      ..addAll(ids);
+    _readySeeded = true;
+  }
+
   Future<void> _refreshReady() async {
     if (!mounted || _loading) return;
     try {
       final ready = await context.read<ApiClient>().get('/staff/pos/ready-orders');
       if (!mounted) return;
-      setState(() {
-        _ready = ((ready['orders'] as List?) ?? [])
-            .map((e) => KitchenOrder.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      });
+      final orders = ((ready['orders'] as List?) ?? [])
+          .map((e) => KitchenOrder.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      _syncReadyAlerts(orders, announce: true);
+      setState(() => _ready = orders);
     } catch (_) {}
   }
 

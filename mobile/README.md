@@ -10,7 +10,7 @@ Native mobile app for **cashiers** and **kitchen staff**.
 - Post-sale receipt summary
 - Ready kitchen orders banner (auto-poll) + mark served
 - Kitchen live board: pending → preparing → ready → served
-- Auto-refresh every 8s + sound on new orders
+- Auto-refresh every 8s + 10s looping alert sound on new kitchen/ready orders (staff can tap Stop)
 - Configurable API server URL (for phones on Wi‑Fi)
 
 ## Run

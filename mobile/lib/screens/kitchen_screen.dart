@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
+import '../services/order_alert.dart';
 import '../theme/app_theme.dart';
 
 class KitchenScreen extends StatefulWidget {
@@ -25,7 +25,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
   List<KitchenOrder> _pending = [];
   List<KitchenOrder> _ready = [];
   bool _canControl = false;
-  int? _lastPendingCount;
+  final Set<int> _knownPendingIds = {};
+  bool _pendingSeeded = false;
 
   @override
   void initState() {
@@ -55,17 +56,20 @@ class _KitchenScreenState extends State<KitchenScreen> {
       final ready = ((data['ready_orders'] as List?) ?? [])
           .map((e) => KitchenOrder.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
-      final pendingOnly = pending.where((o) => o.kitchenStatus == 'pending').length;
-
-      if (_lastPendingCount != null && pendingOnly > _lastPendingCount!) {
-        SystemSound.play(SystemSoundType.alert);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('New kitchen order')),
-          );
+      final pendingIds = pending
+          .where((o) => o.kitchenStatus == 'pending')
+          .map((o) => o.id)
+          .toSet();
+      if (_pendingSeeded) {
+        final newcomers = pendingIds.difference(_knownPendingIds);
+        if (newcomers.isNotEmpty && mounted) {
+          unawaited(context.read<OrderAlertService>().ringNewKitchenOrder());
         }
       }
-      _lastPendingCount = pendingOnly;
+      _knownPendingIds
+        ..clear()
+        ..addAll(pendingIds);
+      _pendingSeeded = true;
 
       if (!mounted) return;
       setState(() {
@@ -93,6 +97,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
 
   Future<void> _action(KitchenOrder order, String action) async {
     try {
+      await context.read<OrderAlertService>().stop();
       await context.read<ApiClient>().post('/staff/kitchen/${order.id}/$action');
       await _load(silent: true);
     } catch (e) {

@@ -6,6 +6,7 @@ import 'providers/cart_provider.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/api_client.dart';
+import 'services/order_alert.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -23,6 +24,7 @@ class OptizeeStaffApp extends StatelessWidget {
         Provider(create: (_) => ApiClient()),
         ChangeNotifierProvider(create: (ctx) => AuthProvider(ctx.read<ApiClient>())..bootstrap()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => OrderAlertService()),
       ],
       child: MaterialApp(
         title: 'Optizee Staff',
