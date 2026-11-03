@@ -59,6 +59,7 @@
                             'walkin' => 'Walk-in',
                             'credit' => 'Credit Account',
                             'online' => 'Online Booking',
+                            'vip' => 'VIP',
                         ];
                         $source = $roomBooking->booking_source ?? 'walkin';
                     @endphp

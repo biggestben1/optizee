@@ -31,6 +31,7 @@
                                 <th>Type</th>
                                 <th>Walk-in / Night</th>
                                 <th class="text-success">Online / Night</th>
+                                <th class="text-warning">VIP / Night</th>
                                 <th>Hourly Rate</th>
                                 <th>Full Suite Price</th>
                                 <th>Total Rooms</th>
@@ -64,6 +65,13 @@
                                 <td>
                                     @if($category->online_price_per_room)
                                     <span class="text-success fw-semibold">₦{{ number_format((float)$category->online_price_per_room, 2) }}</span>
+                                    @else
+                                    <span class="text-muted">Same as walk-in</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($category->vip_price_per_room)
+                                    <span class="text-warning fw-semibold">₦{{ number_format((float)$category->vip_price_per_room, 2) }}</span>
                                     @else
                                     <span class="text-muted">Same as walk-in</span>
                                     @endif

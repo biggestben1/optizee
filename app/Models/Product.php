@@ -17,6 +17,7 @@ class Product extends Model
         'description',
         'cost_price',
         'selling_price',
+        'vip_price',
         'stock_quantity',
         'reorder_level',
         'unit',
@@ -27,8 +28,27 @@ class Product extends Model
     protected $casts = [
         'cost_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
+        'vip_price' => 'decimal:2',
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Price charged on VIP Bar POS. Falls back to the normal selling price.
+     */
+    public function getVipPrice(): float
+    {
+        return $this->vip_price !== null && (float) $this->vip_price > 0
+            ? (float) $this->vip_price
+            : (float) $this->selling_price;
+    }
+
+    /**
+     * Selling price for a given POS area (VIP Bar uses VIP price).
+     */
+    public function priceForPosArea(?string $area): float
+    {
+        return $area === 'vip_bar' ? $this->getVipPrice() : (float) $this->selling_price;
+    }
 
     public function category(): BelongsTo
     {

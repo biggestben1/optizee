@@ -76,6 +76,20 @@
                             @error('selling_price')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="text-muted">Normal Bar / Kitchen selling price</small>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-warning" for="vip_price"><i class="fe fe-award me-1"></i>VIP Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₦</span>
+                                <input type="text" class="form-control @error('vip_price') is-invalid @enderror" id="vip_price" name="vip_price" value="{{ old('vip_price', '') }}" placeholder="Same as selling price">
+                            </div>
+                            @error('vip_price')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Charged on VIP Bar POS. Leave empty to use the selling price.</small>
                         </div>
                     </div>
                     <div class="row">
@@ -124,6 +138,7 @@
         const costPriceInput = document.getElementById('cost_price');
         const costPriceField = document.getElementById('costPriceField');
         const sellingPriceInput = document.getElementById('selling_price');
+        const vipPriceInput = document.getElementById('vip_price');
         const categorySelect = document.getElementById('category_id');
         const form = costPriceInput.closest('form');
         
@@ -175,8 +190,9 @@
         // Format cost price with commas on input
         formatNumber(costPriceInput);
         
-        // Format selling price with commas on input
+        // Format selling / VIP price with commas on input
         formatNumber(sellingPriceInput);
+        formatNumber(vipPriceInput);
         
         // Remove commas before form submission
         form.addEventListener('submit', function(e) {
@@ -187,6 +203,7 @@
             
             let sellingValue = sellingPriceInput.value.replace(/,/g, '');
             sellingPriceInput.value = sellingValue;
+            vipPriceInput.value = vipPriceInput.value.replace(/,/g, '');
         });
         
         // Format initial values if they exist
@@ -201,6 +218,7 @@
         
         formatInitialValue(costPriceInput);
         formatInitialValue(sellingPriceInput);
+        formatInitialValue(vipPriceInput);
     });
 </script>
 @endpush

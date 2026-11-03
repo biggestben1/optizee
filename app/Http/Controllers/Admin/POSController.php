@@ -146,7 +146,7 @@ class POSController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'vat_rate' => 'nullable|numeric|min:0|max:1',
             'notes' => 'nullable|string',
-            'pos_area' => 'nullable|in:bar,kitchen',
+            'pos_area' => 'nullable|in:bar,kitchen,vip_bar',
         ]);
 
         $validated += [
@@ -419,7 +419,7 @@ class POSController extends Controller
             'table_guest_id' => 'nullable',
             'customer_id' => 'nullable|exists:customers,id',
             'discount' => 'nullable|numeric|min:0',
-            'pos_area' => 'nullable|in:bar,kitchen',
+            'pos_area' => 'nullable|in:bar,kitchen,vip_bar',
         ]);
         $posArea = $validated['pos_area'] ?? null;
 
@@ -558,7 +558,7 @@ class POSController extends Controller
             'table_id' => 'nullable',
             'table_guest_id' => 'nullable',
             'sale_id' => 'nullable',
-            'pos_area' => 'nullable|in:bar,kitchen',
+            'pos_area' => 'nullable|in:bar,kitchen,vip_bar',
         ]);
         $posArea = $validated['pos_area'] ?? null;
 
@@ -718,7 +718,9 @@ class POSController extends Controller
      */
     public function clearPending(Request $request)
     {
-        $posArea = in_array($request->input('pos_area'), ['bar', 'kitchen'], true) ? $request->input('pos_area') : null;
+        $posArea = array_key_exists((string) $request->input('pos_area'), Sale::POS_AREAS)
+            ? $request->input('pos_area')
+            : null;
         $pending = Sale::where('status', 'pending')
             ->where('user_id', auth()->id())
             ->forPosArea($posArea);

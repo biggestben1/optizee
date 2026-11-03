@@ -300,7 +300,15 @@
                         <td>{{ $sale->user->name }}</td>
                         <td>{{ $sale->customer?->name ?? 'Walk-in' }}</td>
                         <td>
-                            <span class="badge {{ $sale->pos_area === 'kitchen' ? 'bg-success' : 'bg-primary' }}">{{ $sale->pos_area === 'kitchen' ? 'Kitchen' : 'Bar' }}</span>
+                            @php
+                                $salePosLabel = \App\Models\Sale::POS_AREAS[$sale->pos_area ?? 'bar'] ?? 'Bar POS';
+                                $salePosBadge = match($sale->pos_area) {
+                                    'kitchen' => 'bg-success',
+                                    'vip_bar' => 'bg-warning text-dark',
+                                    default => 'bg-primary',
+                                };
+                            @endphp
+                            <span class="badge {{ $salePosBadge }}">{{ str_replace(' POS', '', $salePosLabel) }}</span>
                         </td>
                         <td>
                             @if($sale->is_credit_sale)

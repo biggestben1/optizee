@@ -39,7 +39,7 @@ class RoomBookingController extends Controller
         $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',
             'booking_type' => 'required|in:overnight,short_stay',
-            'booking_source' => 'nullable|in:walkin,credit,online',
+            'booking_source' => 'nullable|in:walkin,credit,online,vip',
             'check_in_date' => 'required|date',
             'check_out_date' => 'required|date',
             'check_in_time' => 'required_if:booking_type,overnight|nullable|date_format:H:i',
@@ -157,17 +157,29 @@ class RoomBookingController extends Controller
                 return back()->with('error', 'Room is not available for the selected dates.');
             }
 
-            // Calculate pricing
-            $isOnline = ($validated['booking_source'] ?? null) === 'online';
+            // Calculate pricing by booking source (online / VIP rates, else walk-in)
+            $bookingSourceForPrice = $validated['booking_source'] ?? 'walkin';
             if ($bookingType === 'short_stay') {
                 $sentHourly = $validated['hourly_rate'] ?? null;
-                $hourlyRate = ($sentHourly !== null && (float) $sentHourly > 0)
-                    ? (float) $sentHourly
-                    : ($isOnline ? $room->getOnlineHourlyRate() : $room->getEffectiveHourlyRate());
+                if ($sentHourly !== null && (float) $sentHourly > 0) {
+                    $hourlyRate = (float) $sentHourly;
+                } elseif ($bookingSourceForPrice === 'online') {
+                    $hourlyRate = $room->getOnlineHourlyRate();
+                } elseif ($bookingSourceForPrice === 'vip') {
+                    $hourlyRate = $room->getVipHourlyRate();
+                } else {
+                    $hourlyRate = $room->getEffectiveHourlyRate();
+                }
                 $subtotal = $hourlyRate * $hours;
                 $pricePerNight = 0;
             } else {
-                $pricePerNight = $isOnline ? $room->getOnlinePrice() : $room->getEffectivePrice();
+                if ($bookingSourceForPrice === 'online') {
+                    $pricePerNight = $room->getOnlinePrice();
+                } elseif ($bookingSourceForPrice === 'vip') {
+                    $pricePerNight = $room->getVipPrice();
+                } else {
+                    $pricePerNight = $room->getEffectivePrice();
+                }
                 $subtotal = $pricePerNight * $nights;
                 $hourlyRate = 0;
             }

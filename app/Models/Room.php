@@ -130,6 +130,23 @@ class Room extends Model
         return $online !== null && (float) $online > 0 ? round((float) $online, 2) : $this->getEffectiveHourlyRate();
     }
 
+    /**
+     * Nightly price for VIP bookings: category VIP price, else the walk-in price.
+     */
+    public function getVipPrice(): float
+    {
+        $vip = $this->category?->vip_price_per_room;
+
+        return $vip !== null && (float) $vip > 0 ? (float) $vip : $this->getEffectivePrice();
+    }
+
+    public function getVipHourlyRate(): float
+    {
+        $vip = $this->category?->vip_hourly_rate;
+
+        return $vip !== null && (float) $vip > 0 ? round((float) $vip, 2) : $this->getEffectiveHourlyRate();
+    }
+
     public function getDisplayName(): string
     {
         if ($this->room_name) {

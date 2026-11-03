@@ -72,6 +72,16 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label text-warning"><i class="fe fe-award me-1"></i>VIP Price per Night (₦)</label>
+                            <input type="number" name="vip_price_per_room" class="form-control @error('vip_price_per_room') is-invalid @enderror"
+                                   value="{{ old('vip_price_per_room', $roomCategory->vip_price_per_room) }}" step="0.01" min="0" placeholder="Same as walk-in price">
+                            @error('vip_price_per_room')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Charged when "VIP" is selected in Hotel POS. Leave empty to use the walk-in price.</small>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label">Hourly Rate (₦) (Optional)</label>
                             <input type="number" name="hourly_rate" class="form-control @error('hourly_rate') is-invalid @enderror" 
                                    value="{{ old('hourly_rate', $roomCategory->hourly_rate) }}" step="0.01" min="0">
@@ -86,6 +96,15 @@
                             <input type="number" name="online_hourly_rate" class="form-control @error('online_hourly_rate') is-invalid @enderror" 
                                    value="{{ old('online_hourly_rate', $roomCategory->online_hourly_rate) }}" step="0.01" min="0" placeholder="Same as walk-in hourly rate">
                             @error('online_hourly_rate')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-warning"><i class="fe fe-award me-1"></i>VIP Hourly Rate (₦) (Optional)</label>
+                            <input type="number" name="vip_hourly_rate" class="form-control @error('vip_hourly_rate') is-invalid @enderror"
+                                   value="{{ old('vip_hourly_rate', $roomCategory->vip_hourly_rate) }}" step="0.01" min="0" placeholder="Same as walk-in hourly rate">
+                            @error('vip_hourly_rate')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

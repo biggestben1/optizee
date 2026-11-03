@@ -14,6 +14,7 @@ class Sale extends Model
     public const POS_AREAS = [
         'bar' => 'Bar POS',
         'kitchen' => 'Kitchen POS',
+        'vip_bar' => 'VIP Bar POS',
     ];
 
     protected $fillable = [
@@ -189,6 +190,10 @@ class Sale extends Model
     {
         if ($area === 'kitchen') {
             return $query->where('pos_area', 'kitchen');
+        }
+
+        if ($area === 'vip_bar') {
+            return $query->where('pos_area', 'vip_bar');
         }
 
         if ($area === 'bar') {

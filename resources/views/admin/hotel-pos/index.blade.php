@@ -44,6 +44,10 @@
                             <input class="form-check-input" type="radio" name="customer_category" id="category-online" value="online" onchange="toggleCustomerCategory()">
                             <label class="form-check-label fw-semibold" for="category-online">Online Booking</label>
                         </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="customer_category" id="category-vip" value="vip" onchange="toggleCustomerCategory()">
+                            <label class="form-check-label fw-semibold" for="category-vip">VIP</label>
+                        </div>
                     </div>
 
                     <div id="credit-customer-select-container" style="display: none;" class="p-3 border rounded border-primary bg-light-primary">
@@ -64,6 +68,9 @@
 
                     <div id="online-booking-hint" style="display: none;" class="mt-2">
                         <small class="text-info"><i class="fe fe-globe me-1"></i>This booking will be marked as an online reservation and charged the online room rate.</small>
+                    </div>
+                    <div id="vip-booking-hint" style="display: none;" class="mt-2">
+                        <small class="text-warning"><i class="fe fe-award me-1"></i>This booking will be marked as VIP and charged the VIP room rate.</small>
                     </div>
                 </div>
 
@@ -93,6 +100,9 @@
                                     @endif
                                     @if($category->online_price_per_room)
                                     · Online ₦{{ number_format($category->online_price_per_room, 2) }}/night
+                                    @endif
+                                    @if($category->vip_price_per_room)
+                                    · VIP ₦{{ number_format($category->vip_price_per_room, 2) }}/night
                                     @endif
                                     )
                                     @endif
@@ -347,6 +357,7 @@ function toggleCustomerCategory() {
     const category = getSelectedCustomerCategory();
     const creditContainer = document.getElementById('credit-customer-select-container');
     const onlineHint = document.getElementById('online-booking-hint');
+    const vipHint = document.getElementById('vip-booking-hint');
     const paymentMethod = document.getElementById('room-payment-method');
     const amountPaidGroup = document.getElementById('room-amount-paid')?.closest('.mb-3');
     const customerSelect = document.getElementById('customer-select');
@@ -356,6 +367,9 @@ function toggleCustomerCategory() {
     }
     if (onlineHint) {
         onlineHint.style.display = category === 'online' ? 'block' : 'none';
+    }
+    if (vipHint) {
+        vipHint.style.display = category === 'vip' ? 'block' : 'none';
     }
     if (selectedRoom) {
         applyRoomRates();
@@ -582,6 +596,7 @@ function loadRooms() {
                             <small class="text-muted">per night</small>
                             <br><small class="text-info">₦${parseFloat(room.hourly_rate || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}/hour</small>
                             ${parseFloat(room.online_price_per_night) !== parseFloat(room.price_per_night) ? `<br><small class="text-success"><i class="fe fe-globe"></i> Online: ₦${parseFloat(room.online_price_per_night).toLocaleString('en-NG', {minimumFractionDigits: 2})}/night</small>` : ''}
+                            ${parseFloat(room.vip_price_per_night) !== parseFloat(room.price_per_night) ? `<br><small class="text-warning"><i class="fe fe-award"></i> VIP: ₦${parseFloat(room.vip_price_per_night).toLocaleString('en-NG', {minimumFractionDigits: 2})}/night</small>` : ''}
                             <br><br>
                             <span class="badge ${room.is_available ? 'bg-success' : 'bg-secondary'}">${room.status}</span>
                         </div>
@@ -608,11 +623,22 @@ function applyRoomRates() {
     if (!selectedRoom) {
         return;
     }
-    const isOnline = getSelectedCustomerCategory() === 'online';
-    selectedRoomPrice = parseFloat(isOnline ? selectedRoom.online_price_per_night : selectedRoom.price_per_night) || 0;
-    selectedHourlyRate = parseFloat(isOnline ? selectedRoom.online_hourly_rate : selectedRoom.hourly_rate) || 0;
+    const category = getSelectedCustomerCategory();
+    let rateLabel = '';
+    if (category === 'online') {
+        selectedRoomPrice = parseFloat(selectedRoom.online_price_per_night) || 0;
+        selectedHourlyRate = parseFloat(selectedRoom.online_hourly_rate) || 0;
+        rateLabel = ' (online rate)';
+    } else if (category === 'vip') {
+        selectedRoomPrice = parseFloat(selectedRoom.vip_price_per_night) || 0;
+        selectedHourlyRate = parseFloat(selectedRoom.vip_hourly_rate) || 0;
+        rateLabel = ' (VIP rate)';
+    } else {
+        selectedRoomPrice = parseFloat(selectedRoom.price_per_night) || 0;
+        selectedHourlyRate = parseFloat(selectedRoom.hourly_rate) || 0;
+    }
 
-    document.getElementById('room-price-per-night').value = `₦${selectedRoomPrice.toLocaleString('en-NG', {minimumFractionDigits: 2})}${isOnline ? ' (online rate)' : ''}`;
+    document.getElementById('room-price-per-night').value = `₦${selectedRoomPrice.toLocaleString('en-NG', {minimumFractionDigits: 2})}${rateLabel}`;
     document.getElementById('hourly-rate').value = selectedHourlyRate.toFixed(2);
 }
 

@@ -167,6 +167,11 @@
                             <i class="fe fe-coffee me-2"></i> Kitchen POS Sale
                         </a>
                     </div>
+                    <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <a href="{{ route('admin.pos.index', ['area' => 'vip_bar']) }}" class="btn btn-warning btn-lg w-100">
+                            <i class="fe fe-award me-2"></i> VIP Bar Sale
+                        </a>
+                    </div>
                     @if(!$isCashier)
                     @php $shift = auth()->user()->getOpenShift(); @endphp
                     @if(!$shift)

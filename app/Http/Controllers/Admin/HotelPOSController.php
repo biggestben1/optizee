@@ -74,6 +74,8 @@ class HotelPOSController extends Controller
                         'hourly_rate' => $room->getEffectiveHourlyRate(),
                         'online_price_per_night' => $room->getOnlinePrice(),
                         'online_hourly_rate' => $room->getOnlineHourlyRate(),
+                        'vip_price_per_night' => $room->getVipPrice(),
+                        'vip_hourly_rate' => $room->getVipHourlyRate(),
                         'status' => $room->status,
                         'is_available' => $room->isAvailable(),
                         'is_suite_sub_room' => $room->is_suite_sub_room,

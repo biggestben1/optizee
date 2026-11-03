@@ -38,11 +38,20 @@ class BookingPriceController extends Controller
             'categories.*.hourly_rate' => 'nullable|numeric|min:0',
             'categories.*.online_price_per_room' => 'nullable|numeric|min:0',
             'categories.*.online_hourly_rate' => 'nullable|numeric|min:0',
+            'categories.*.vip_price_per_room' => 'nullable|numeric|min:0',
+            'categories.*.vip_hourly_rate' => 'nullable|numeric|min:0',
         ]);
 
         $changed = 0;
         foreach (RoomCategory::whereIn('id', array_keys($validated['categories']))->get() as $category) {
-            $old = $category->only(['price_per_room', 'hourly_rate', 'online_price_per_room', 'online_hourly_rate']);
+            $old = $category->only([
+                'price_per_room',
+                'hourly_rate',
+                'online_price_per_room',
+                'online_hourly_rate',
+                'vip_price_per_room',
+                'vip_hourly_rate',
+            ]);
             $category->fill($validated['categories'][$category->id]);
 
             if ($category->isDirty()) {

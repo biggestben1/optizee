@@ -13,11 +13,12 @@
 
 <div class="card">
     <div class="card-header bg-info-transparent">
-        <h4 class="card-title mb-0 text-info"><i class="fe fe-home me-2"></i>Room Prices (Walk-in &amp; Online Booking)</h4>
+        <h4 class="card-title mb-0 text-info"><i class="fe fe-home me-2"></i>Room Prices (Walk-in, Online &amp; VIP)</h4>
     </div>
     <div class="card-body">
         <p class="text-muted mb-3">
-            Online prices are charged when "Online Booking" is selected in Hotel POS. Leave an online price empty to charge the walk-in price.
+            Online and VIP prices are charged when that customer category is selected in Hotel POS.
+            Leave an online or VIP price empty to charge the walk-in price.
             Rooms with their own custom price keep it for walk-in bookings.
         </p>
         <form method="POST" action="{{ route('admin.booking-prices.rooms') }}">
@@ -32,6 +33,8 @@
                             <th>Walk-in / Hour (₦)</th>
                             <th class="text-success"><i class="fe fe-globe me-1"></i>Online / Night (₦)</th>
                             <th class="text-success"><i class="fe fe-globe me-1"></i>Online / Hour (₦)</th>
+                            <th class="text-warning"><i class="fe fe-award me-1"></i>VIP / Night (₦)</th>
+                            <th class="text-warning"><i class="fe fe-award me-1"></i>VIP / Hour (₦)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -42,16 +45,16 @@
                                 @unless($category->is_active)<span class="badge bg-secondary ms-1">Inactive</span>@endunless
                                 @if($category->is_suite)<br><small class="text-muted">Full suite: ₦{{ number_format($category->full_suite_price, 2) }}</small>@endif
                             </td>
-                            @foreach(['price_per_room', 'hourly_rate', 'online_price_per_room', 'online_hourly_rate'] as $field)
+                            @foreach(['price_per_room', 'hourly_rate', 'online_price_per_room', 'online_hourly_rate', 'vip_price_per_room', 'vip_hourly_rate'] as $field)
                             <td>
                                 <input type="number" name="categories[{{ $category->id }}][{{ $field }}]" class="form-control"
                                        min="0" step="0.01" value="{{ old("categories.{$category->id}.{$field}", $category->$field) }}"
-                                       placeholder="{{ str_starts_with($field, 'online') ? 'Same as walk-in' : '' }}">
+                                       placeholder="{{ str_starts_with($field, 'online') || str_starts_with($field, 'vip') ? 'Same as walk-in' : '' }}">
                             </td>
                             @endforeach
                         </tr>
                         @empty
-                        <tr><td colspan="5" class="text-center text-muted">No room categories yet.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted">No room categories yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

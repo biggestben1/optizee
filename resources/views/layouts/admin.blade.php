@@ -316,17 +316,29 @@
                                     <span class="side-menu__label">Dashboard</span>
                                 </a>
                             </li>
-                            @php $onPos = request()->routeIs('admin.pos.*') && !request()->routeIs('admin.pos.supervisor*'); @endphp
+                            @php
+                                $onPos = request()->routeIs('admin.pos.*') && !request()->routeIs('admin.pos.supervisor*');
+                                $posAreaParam = request('area', 'bar');
+                            @endphp
                             <li class="slide">
-                                <a class="side-menu__item {{ $onPos && request('area') !== 'kitchen' ? 'active' : '' }}" href="{{ route('admin.pos.index', ['area' => 'bar']) }}">
+                                <a class="side-menu__item {{ $onPos && $posAreaParam === 'bar' ? 'active' : '' }}" href="{{ route('admin.pos.index', ['area' => 'bar']) }}">
                                     <i class="side-menu__icon fe fe-shopping-cart"></i>
                                     <span class="side-menu__label">Bar POS Sales</span>
                                 </a>
                             </li>
                             <li class="slide">
-                                <a class="side-menu__item {{ $onPos && request('area') === 'kitchen' ? 'active' : '' }}" href="{{ route('admin.pos.index', ['area' => 'kitchen']) }}">
+                                <a class="side-menu__item {{ $onPos && $posAreaParam === 'kitchen' ? 'active' : '' }}" href="{{ route('admin.pos.index', ['area' => 'kitchen']) }}">
                                     <i class="side-menu__icon fe fe-coffee"></i>
                                     <span class="side-menu__label">Kitchen POS Sales</span>
+                                </a>
+                            </li>
+                            <li class="sub-category">
+                                <h3>VIP Bar</h3>
+                            </li>
+                            <li class="slide">
+                                <a class="side-menu__item {{ $onPos && $posAreaParam === 'vip_bar' ? 'active' : '' }}" href="{{ route('admin.pos.index', ['area' => 'vip_bar']) }}">
+                                    <i class="side-menu__icon fe fe-award"></i>
+                                    <span class="side-menu__label">VIP Bar POS Sales</span>
                                 </a>
                             </li>
                             @if(!auth()->user()->isCashier())

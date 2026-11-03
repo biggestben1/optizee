@@ -123,6 +123,10 @@
         border-color: #2dce89;
         box-shadow: 0 12px 24px rgba(45, 206, 137, 0.18);
     }
+    .pos-board.pos-area-vip_bar .product-card:hover {
+        border-color: #e2a04a;
+        box-shadow: 0 12px 24px rgba(201, 132, 46, 0.22);
+    }
     .pos-board .product-card.in-cart {
         border-color: #c9842e;
         background: linear-gradient(180deg, #fff8ee 0%, #fff 58%);
@@ -130,6 +134,10 @@
     .pos-board.pos-area-kitchen .product-card.in-cart {
         border-color: #2dce89;
         background: linear-gradient(180deg, #f3fbf6 0%, #fff 58%);
+    }
+    .pos-board.pos-area-vip_bar .product-card.in-cart {
+        border-color: #c9842e;
+        background: linear-gradient(180deg, #fff8ee 0%, #fff 58%);
     }
     .pos-board .product-card.pop {
         animation: posCardPop 0.18s ease;
@@ -156,6 +164,10 @@
     .pos-board.pos-area-kitchen .pos-tile-cat {
         background: #e8f8ef;
         color: #157a45;
+    }
+    .pos-board.pos-area-vip_bar .pos-tile-cat {
+        background: #fff4e4;
+        color: #8a5a12;
     }
     .pos-tile-name {
         margin: 0 0 12px;
@@ -204,6 +216,10 @@
         background: #2dce89;
         color: #08301c;
     }
+    .pos-board.pos-area-vip_bar .pos-qty-badge {
+        background: #c9842e;
+        color: #1a1208;
+    }
     .pos-board .product-price {
         color: #c9842e;
         font-weight: 800;
@@ -213,6 +229,9 @@
     }
     .pos-board.pos-area-kitchen .product-price {
         color: #1aae6f;
+    }
+    .pos-board.pos-area-vip_bar .product-price {
+        color: #c9842e;
     }
     .pos-board .category-btn {
         margin: 4px;
@@ -237,6 +256,11 @@
         background: linear-gradient(180deg, #3ddc97, #1aae6f) !important;
         border-color: #1aae6f !important;
         color: #08301c !important;
+    }
+    .pos-board.pos-area-vip_bar .category-btn.active {
+        background: linear-gradient(180deg, #e2a04a, #c9842e) !important;
+        border-color: #c9842e !important;
+        color: #1a1208 !important;
     }
     .pos-board #product-search {
         width: min(250px, 100%);
@@ -592,9 +616,21 @@
             <div class="card-header flex-wrap gap-2">
                 <div class="btn-group" role="group" aria-label="Switch POS">
                     @foreach(\App\Models\Sale::POS_AREAS as $areaKey => $areaLabel)
+                    @php
+                        $areaBtnClass = match($areaKey) {
+                            'kitchen' => 'btn-success',
+                            'vip_bar' => 'btn-warning',
+                            default => 'btn-primary',
+                        };
+                        $areaIcon = match($areaKey) {
+                            'kitchen' => 'fe-coffee',
+                            'vip_bar' => 'fe-award',
+                            default => 'fe-shopping-cart',
+                        };
+                    @endphp
                     <a href="{{ route('admin.pos.index', array_merge(request()->only(['table_id', 'guest_id']), ['area' => $areaKey])) }}"
-                       class="btn {{ $posArea === $areaKey ? ($areaKey === 'kitchen' ? 'btn-success' : 'btn-primary') : 'btn-outline-secondary' }}">
-                        <i class="fe {{ $areaKey === 'kitchen' ? 'fe-coffee' : 'fe-shopping-cart' }} me-1"></i>{{ $areaLabel }}
+                       class="btn {{ $posArea === $areaKey ? $areaBtnClass : 'btn-outline-secondary' }}">
+                        <i class="fe {{ $areaIcon }} me-1"></i>{{ $areaLabel }}
                     </a>
                     @endforeach
                 </div>
@@ -625,19 +661,20 @@
                     @if($hasProducts)
                         @foreach($categories as $category)
                             @foreach($category->products as $product)
+                            @php $posSellPrice = $product->priceForPosArea($posArea); @endphp
                             <div class="col-md-4 col-lg-3 product-item" data-category="{{ $category->id }}" style="display: block;">
                                 <div class="card product-card h-100 {{ $product->stock_quantity <= 0 ? 'out-of-stock' : '' }}" 
                                      data-product-id="{{ $product->id }}"
                                      data-product-name="{{ $product->name }}"
-                                     data-product-price="{{ $product->selling_price }}"
+                                     data-product-price="{{ $posSellPrice }}"
                                      data-product-stock="{{ $product->stock_quantity }}"
                                      onclick="handleProductClick(this)">
                                     <span class="pos-qty-badge">0</span>
                                     <div class="card-body text-start d-flex flex-column">
-                                        <span class="pos-tile-cat">{{ $category->name }}</span>
+                                        <span class="pos-tile-cat">{{ $category->name }}{{ $posArea === 'vip_bar' ? ' · VIP' : '' }}</span>
                                         <h6 class="pos-tile-name">{{ $product->name }}</h6>
                                         <div class="pos-tile-foot">
-                                            <p class="product-price">₦{{ number_format($product->selling_price, 2) }}</p>
+                                            <p class="product-price">₦{{ number_format($posSellPrice, 2) }}</p>
                                             <span class="pos-stock {{ $product->stock_quantity > 0 && $product->stock_quantity <= 5 ? 'low' : '' }}">{{ $product->stock_quantity }} left</span>
                                         </div>
                                     </div>
@@ -648,7 +685,7 @@
                     @else
                         <div class="col-12">
                             <div class="alert alert-info text-center py-5">
-                                <i class="fe fe-info me-2"></i>No {{ $posArea === 'kitchen' ? 'food' : 'bar' }} products available. Please add products first.
+                                <i class="fe fe-info me-2"></i>No {{ $posArea === 'kitchen' ? 'food' : ($posArea === 'vip_bar' ? 'VIP bar' : 'bar') }} products available. Please add products first.
                             </div>
                         </div>
                     @endif

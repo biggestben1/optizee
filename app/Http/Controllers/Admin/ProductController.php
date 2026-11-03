@@ -59,6 +59,7 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
+            'vip_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'reorder_level' => 'required|integer|min:0',
             'unit' => 'required|string|max:50',
@@ -66,6 +67,9 @@ class ProductController extends Controller
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+        if (($validated['vip_price'] ?? null) === '' || ($validated['vip_price'] ?? null) === null) {
+            $validated['vip_price'] = null;
+        }
 
         $product = Product::create($validated);
 
@@ -109,6 +113,7 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
+            'vip_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'reorder_level' => 'required|integer|min:0',
             'unit' => 'required|string|max:50',
@@ -116,6 +121,9 @@ class ProductController extends Controller
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+        if (($validated['vip_price'] ?? null) === '' || ($validated['vip_price'] ?? null) === null) {
+            $validated['vip_price'] = null;
+        }
 
         $oldValues = $product->toArray();
         $product->update($validated);

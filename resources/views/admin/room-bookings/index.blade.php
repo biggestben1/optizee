@@ -62,6 +62,8 @@
                                     @endif
                                     @if(($booking->booking_source ?? 'walkin') === 'online')
                                     <br><span class="badge bg-info">Online</span>
+                                    @elseif(($booking->booking_source ?? null) === 'vip')
+                                    <br><span class="badge bg-warning text-dark">VIP</span>
                                     @elseif(($booking->booking_source ?? null) === 'credit' || $booking->is_credit_booking)
                                     <br><span class="badge bg-warning">Credit</span>
                                     @endif
